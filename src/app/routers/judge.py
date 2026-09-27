@@ -116,6 +116,12 @@ async def save_score(assignment_id: int, request: Request, viewer: Viewer = Depe
                  detail={"project": a.project.external_id or a.project.id}, request=request)
     db.commit()
 
+    from app.services.webhooks import safe_fire
+    safe_fire(db, event, "score.submitted", {
+        "project_id": a.project.external_id or str(a.project.id),
+        "judge_id": viewer.user.handle,
+    })
+
     if form.get("then") == "next":
         pending = [s for s in _my_assignments(db, viewer, event.id) if s.status == AssignmentStatus.PENDING]
         if pending:

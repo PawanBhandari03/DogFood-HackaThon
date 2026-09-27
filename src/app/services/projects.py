@@ -100,4 +100,12 @@ def set_status(db: Session, viewer: Viewer, event: Event, status: str,
     audit.record(db, f"project.{status}", actor=viewer.user, event_id=event.id,
                  entity_type="project", entity_id=project.id,
                  detail={"title": project.title, "from": previous}, request=request)
+    if status == ProjectStatus.SUBMITTED:
+        from app.services.webhooks import safe_fire
+        safe_fire(db, event, "project.submitted", {
+            "project_id": project.external_id or str(project.id),
+            "title": project.title,
+            "team": team.name,
+            "event": event.slug,
+        })
     return project

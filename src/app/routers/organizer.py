@@ -489,6 +489,11 @@ def publish(slug: str, request: Request, action: str = Form(...), viewer: Viewer
         raise HTTPException(422, "Unknown action.")
     _log(db, viewer, event, f"results.{action}ed", request, entity_type="event", entity_id=event.slug)
     db.commit()
+
+    if action == "publish":
+        from app.services.webhooks import safe_fire
+        safe_fire(db, event, "results.published", {"event": event.slug})
+
     return redirect(_url(event, "results"), "Results published." if action == "publish" else "Results hidden.")
 
 
