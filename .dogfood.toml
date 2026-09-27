@@ -1,0 +1,21 @@
+[portal]
+base_url = "http://localhost:8080"
+
+[tiers]
+claimed = []
+pitch = "Broadsheet: a self-hosted hackathon portal with backend-enforced judge isolation, weighted rubrics and documented shrinkage normalization."
+
+[auth]
+# Printed by the seed step when `docker compose up` boots (demo mode only).
+organizer   = "Cookie: session=org_binarybuilders_demo"
+judge_a     = "Cookie: session=jdg_a_binarybuilders_demo"
+judge_b     = "Cookie: session=jdg_b_binarybuilders_demo"
+participant = "Cookie: session=prt_binarybuilders_demo"
+
+[routes]
+gallery      = "/projects"
+submit       = "/api/events/sample-hack-2026/projects"
+judge_scores = "/api/judge/scores"
+# judge_a is fixture judge jdg_24; judge_b (jdg_26) must be refused here.
+peer_scores  = "/api/judges/jdg_24/scores"
+csv_export   = "/api/events/sample-hack-2026/export/results.csv"

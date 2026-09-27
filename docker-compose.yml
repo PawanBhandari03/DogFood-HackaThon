@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dogfood
+      POSTGRES_PASSWORD: dogfood
+      POSTGRES_DB: dogfood
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dogfood -d dogfood"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    # No published port: only the app talks to the database.
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql+psycopg://dogfood:dogfood@db:5432/dogfood
+      TEST_DATABASE_URL: postgresql+psycopg://dogfood:dogfood@db:5432/dogfood_test
+      # "demo" seeds fixtures.json, known demo passwords and the fixed checker
+      # session tokens. Set to "production" to disable all of that.
+      DOGFOOD_MODE: demo
+      FIXTURES_PATH: /app/data/fixtures.json
+
+volumes:
+  pgdata:
