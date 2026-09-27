@@ -108,11 +108,15 @@ def list_events(db: Session = Depends(get_db)):
 
 
 @router.get("/events/{slug}/projects")
-def list_projects(slug: str, db: Session = Depends(get_db)):
+def list_projects(slug: str, response: Response, db: Session = Depends(get_db)):
     event = event_or_404(db, slug)
     rows = db.scalars(select(Project).where(
         Project.event_id == event.id, Project.status == ProjectStatus.SUBMITTED)
         .options(selectinload(Project.team), selectinload(Project.track)).order_by(Project.title))
+    # This one response is public, read-only and non-sensitive (same data the
+    # public gallery shows), so it is safe to open to the embeddable widget on
+    # any external site. No other route gets this header.
+    response.headers["Access-Control-Allow-Origin"] = "*"
     return [project_out(p) for p in rows]
 
 

@@ -473,9 +473,6 @@ def results_page(slug: str, request: Request, viewer: Viewer = Depends(require_u
     return render(request, "manage/results.html", event=event, tab="results", res=res, judge_names=judge_names)
 
 
-from app.services.voting import voting_open
-
-
 @router.post("/events/{slug}/manage/results/publish")
 def publish(slug: str, request: Request, action: str = Form(...), viewer: Viewer = Depends(require_user),
             db: Session = Depends(get_db)):

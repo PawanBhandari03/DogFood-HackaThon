@@ -105,6 +105,11 @@ Community approval voting (T3). `(user_id, project_id)` is unique: a voter can v
 ### `comments`
 Public comments on submitted projects. `(project_id, user_id, body, created_at, hidden_at, hidden_by_id)`. Moderation is soft-delete: organizers can hide comments, setting `hidden_at` and `hidden_by_id`. Hidden comments disappear from public view but remain in the database with an audit trail.
 
+### `webhooks`, `webhook_deliveries` (T4)
+An organizer registers a `webhooks` row per event: a target `url`, a random `secret` (used to sign payloads, shown once at creation), which `subscribed_events` it wants (`project.submitted`, `score.submitted`, `results.published`), and `is_active`. Every attempted delivery — success or failure — writes a `webhook_deliveries` row (`event_type`, `payload`, `status_code`, `error`, `succeeded`), which **is** the audit trail an organizer reads to debug a failing integration. A failed delivery never blocks or rolls back the action that triggered it (`services/webhooks.py` swallows every exception). Score-submitted payloads carry only ids, never score values or comments, so a webhook cannot become a side channel that leaks T2's judge isolation.
+
+Certificates (`/events/{slug}/certificates/{project_id}`) and signed judge participation records (`/judges/{id}/record`) are **not stored tables** — both are computed on read from existing tables (`projects`/`teams`/`team_members`, and `assignments`/`scores` respectively), the same "recompute, never store a derived number" principle as raw/normalized scores in section on `scores` above. The judge record's signature is an HMAC over the live counts, keyed by `INSTANCE_SECRET` (`config.py`), so it is only ever as stale as the data itself.
+
 ### `audit_log`
 Append-only: nothing in the application updates or deletes it. `action` (e.g. `score.updated`, `denied.peer_scores`), `actor_id`, `event_id`, `entity_type` / `entity_id`, a JSONB `detail` with before/after values where relevant, and the client IP. Indexed on `at` and `event_id`, because the organizer view reads it newest-first per event.
 

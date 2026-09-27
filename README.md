@@ -87,9 +87,17 @@ The committed [acceptance-report.txt](acceptance-report.txt) is the checker's ou
 - Public project comments with 1–2000 character validation, rate limiting, and organizer soft-delete moderation.
 - Comprehensive anti-abuse protections: rate limits (30 votes/min, 5 comments/min), duplicate detection via DB constraints, and organizer abuse signals (new accounts, shared IPs, rapid voters).
 - Full threat analysis documented in [THREAT-MODEL.md](THREAT-MODEL.md).
-- *Note:* Claimed tiers in `.dogfood.toml` remain `["T1", "T2"]` because `run.py` only validates T1 and T2 checks.
 
-**T4: not claimed.** Some T4 pieces exist: a documented JSON API with OpenAPI at `/api/docs`, and bulk JSON import/export through `python -m app.cli`.
+**T4, stretch: built & tested**
+- REST API documented with an interactive OpenAPI UI at `/api/docs` (spec at `/api/openapi.json`), covering events, projects, judge scores, results, and every export.
+- Bulk import/export: `python -m app.cli import/export`, plus `/api/events/{slug}/export.json` (round-trips through the fixtures.json shape).
+- Webhooks: organizers can register a URL per event for `project.submitted`, `score.submitted` and `results.published`, delivered with an HMAC-SHA256 signature (`X-Broadsheet-Signature`), a delivery log, and a guarantee that a failing webhook never blocks the real action. Score-submitted payloads never include score values or comments.
+- Certificates: a printable, publicly shareable page per submitted project (`/events/{slug}/certificates/{project_id}`), showing the final rank once published.
+- Signed, publicly verifiable judge participation records (`/judges/{judge_id}/record` + `/record/verify`): an HMAC-signed count of reviews per event, verifiable by anyone, with no project titles or scores exposed.
+- An embeddable gallery widget: one `<script>` tag, no build step, pulling live data from the one CORS-enabled public endpoint. Preview and copyable snippet at `/embed/{slug}/preview`, linked from the organizer overview.
+- Full details, payload shapes and verification code samples in [API.md](API.md).
+
+**Tier claim note:** `run.py` only checks T1 and T2 (confirmed with the organizers on Discord: T3/T4 are verified by a judge reading the repo, tests and docs, not by the script). `acceptance-report.txt` will always show `note: claimed but not verified: T3` and, once claimed, the same for T4 — that is expected, not a red flag.
 
 ## Known gaps, honestly
 

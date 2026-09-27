@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Embed widget · {{ event.name }}{% endblock %}
+{% block content %}
+<div class="kicker"><a href="/events/{{ event.slug }}">{{ event.name }}</a> · embeddable gallery</div>
+<h1>Drop this gallery on your own site</h1>
+<p class="deck">One script tag, no build step, no dependencies. It pulls live data from
+  <code class="mono">/api/events/{{ event.slug }}/projects</code> and renders cards wherever you put it.</p>
+
+<div class="section-head" style="margin-top:24px"><h2>Copy this</h2></div>
+<pre class="copy" style="white-space:pre-wrap">&lt;div id="broadsheet-gallery"&gt;&lt;/div&gt;
+&lt;script src="{{ embed_url }}" data-target="#broadsheet-gallery"&gt;&lt;/script&gt;</pre>
+
+<div class="section-head"><h2>Live preview</h2></div>
+<div id="broadsheet-gallery"></div>
+<script src="/embed/{{ event.slug }}/gallery.js" data-target="#broadsheet-gallery"></script>
+{% endblock %}

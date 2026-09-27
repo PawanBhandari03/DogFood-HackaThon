@@ -1,6 +1,9 @@
 """Pages anyone can see without logging in."""
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.responses import FileResponse
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
@@ -10,6 +13,7 @@ from app.models import Comment, Event, Project, ProjectStatus, Team, TeamMember,
 from app.security import Forbidden
 from app.services import audit
 from app.services.ratelimit import comment_limiter
+from app.services.voting import voting_open
 from app.services.scoring import event_results
 from app.web import event_or_404, redirect, render
 
@@ -198,9 +202,6 @@ def event_page(slug: str, request: Request, viewer: Viewer = Depends(get_viewer)
     return render(request, "event.html", event=event, submitted=submitted, teams=teams, member=member)
 
 
-from app.services.voting import voting_open
-
-
 @router.get("/events/{slug}/results")
 def results_page(slug: str, request: Request, viewer: Viewer = Depends(get_viewer),
                  db: Session = Depends(get_db)):
@@ -212,3 +213,26 @@ def results_page(slug: str, request: Request, viewer: Viewer = Depends(get_viewe
         preview = True
     res = event_results(db, event)
     return render(request, "results.html", event=event, res=res, preview=preview)
+
+
+_EMBED_JS = Path(__file__).resolve().parents[1] / "static" / "js" / "embed.js"
+
+
+@router.get("/embed/{slug}/gallery.js")
+def embed_gallery_js(slug: str, db: Session = Depends(get_db)):
+    """The embeddable widget script (T4). One file, no build step, served for
+    any event slug so the same script works for every event on this instance;
+    the slug in the URL is what the script reads to know which gallery to
+    fetch. 404s early if the event does not exist, so a bad slug fails loudly
+    rather than silently embedding an empty widget."""
+    event_or_404(db, slug)
+    return FileResponse(_EMBED_JS, media_type="application/javascript")
+
+
+@router.get("/embed/{slug}/preview")
+def embed_preview(slug: str, request: Request, db: Session = Depends(get_db)):
+    """A demo page for organizers: shows the widget live and the exact
+    <script> snippet to copy onto an external site."""
+    event = event_or_404(db, slug)
+    embed_url = str(request.base_url).rstrip("/") + f"/embed/{event.slug}/gallery.js"
+    return render(request, "embed_preview.html", event=event, embed_url=embed_url)
