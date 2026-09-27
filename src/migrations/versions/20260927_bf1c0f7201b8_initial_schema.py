@@ -206,7 +206,9 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_projects_event_id'), 'projects', ['event_id'], unique=False)
     op.create_index(op.f('ix_projects_team_id'), 'projects', ['team_id'], unique=False)
-    op.create_index('one_live_project_per_team', 'projects', ['team_id'], unique=True, postgresql_where=sa.text("status <> 'withdrawn' AND duplicate_of_id IS NULL"))
+    op.create_index('one_live_project_per_team', 'projects', ['team_id'], unique=True,
+                    postgresql_where=sa.text("status <> 'withdrawn' AND duplicate_of_id IS NULL"),
+                    sqlite_where=sa.text("status <> 'withdrawn' AND duplicate_of_id IS NULL"))
     op.create_table('team_members',
     sa.Column('team_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),

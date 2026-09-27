@@ -90,6 +90,9 @@ def register(request: Request, name: str = Form(...), email: str = Form(...), pa
     return _login_response(db, user, next, label="register")
 
 
+from app.services.journey import compute_journey
+
+
 @router.get("/me")
 def dashboard(request: Request, viewer: Viewer = Depends(require_user), db: Session = Depends(get_db)):
     user = viewer.user
@@ -97,10 +100,14 @@ def dashboard(request: Request, viewer: Viewer = Depends(require_user), db: Sess
         select(TeamMember).where(TeamMember.user_id == user.id)
         .options(selectinload(TeamMember.team).selectinload(Team.event))).all()
     team_projects = {}
+    journeys = {}
     for m in memberships:
-        team_projects[m.team_id] = db.scalar(select(Project).where(
+        p = db.scalar(select(Project).where(
             Project.team_id == m.team_id, Project.status != ProjectStatus.WITHDRAWN,
             Project.duplicate_of_id.is_(None)))
+        team_projects[m.team_id] = p
+        journeys[m.team_id] = compute_journey(db, m.team, p, m.team.event)
+
     judging = []
     for event in db.scalars(select(Event).where(Event.id.in_(viewer.judge_event_ids))):
         done, total = judge_load(db, event).get(user.id, (0, 0))
@@ -110,4 +117,4 @@ def dashboard(request: Request, viewer: Viewer = Depends(require_user), db: Sess
     if viewer.is_admin:
         organizing = db.scalars(select(Event).order_by(Event.submissions_close_at.desc())).all()
     return render(request, "me.html", memberships=memberships, team_projects=team_projects,
-                  judging=judging, organizing=organizing)
+                  journeys=journeys, judging=judging, organizing=organizing)

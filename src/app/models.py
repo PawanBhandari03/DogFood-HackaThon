@@ -35,7 +35,20 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-TZ = DateTime(timezone=True)
+from sqlalchemy.types import TypeDecorator
+
+
+class TZDateTime(TypeDecorator):
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_result_value(self, value, dialect):
+        if value is not None and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+
+
+TZ = TZDateTime()
 JSONType = JSON().with_variant(JSONB(), "postgresql")
 
 
@@ -281,7 +294,8 @@ class Project(Base):
         # One live project per team. A flagged duplicate does not count, which
         # is how fixtures.json's prj_41 can exist next to prj_07.
         Index("one_live_project_per_team", "team_id", unique=True,
-              postgresql_where=text("status <> 'withdrawn' AND duplicate_of_id IS NULL")),
+              postgresql_where=text("status <> 'withdrawn' AND duplicate_of_id IS NULL"),
+              sqlite_where=text("status <> 'withdrawn' AND duplicate_of_id IS NULL")),
     )
 
     @property

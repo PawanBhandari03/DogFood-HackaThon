@@ -52,6 +52,11 @@ def _ensure_user(db, email, name, pw_hash, **flags) -> User:
 def _practice_event(db, organizer: User) -> Event:
     event = db.scalar(select(Event).where(Event.slug == "practice-jam"))
     if event:
+        if event.voting_mode != "authenticated":
+            event.voting_mode = "authenticated"
+            event.voting_open_at = event.starts_at or utcnow()
+            event.voting_close_at = event.submissions_close_at or (utcnow() + timedelta(days=30))
+            event.max_votes = 3
         return event
     now = utcnow()
     event = Event(

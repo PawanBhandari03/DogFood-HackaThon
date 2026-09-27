@@ -195,6 +195,13 @@ def _lookup_judge(db: Session, ref: str) -> User:
     return user
 
 
+@router.get("/judge/record", include_in_schema=False)
+def my_judge_record(viewer: Viewer = Depends(require_user)):
+    """Convenience redirect for the logged-in judge to view their own participation record."""
+    ref = viewer.user.external_id or str(viewer.user.id)
+    return redirect(f"/judges/{ref}/record")
+
+
 @router.get("/judges/{ref}/record", include_in_schema=False)
 def judge_record_page(ref: str, request: Request, db: Session = Depends(get_db)):
     """Public HTML page showing a judge's signed participation record.

@@ -3,8 +3,15 @@
 {% block title %}Judge desk{% endblock %}
 {% block content %}
 <div class="kicker">Judge desk</div>
-<h1>Your reviews</h1>
-<p class="deck">Only your own assignments and scores are shown here. Nobody else's scores ever reach this page.</p>
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+  <div>
+    <h1>Your reviews</h1>
+    <p class="deck">Only your own assignments and scores are shown here. Nobody else's scores ever reach this page.</p>
+  </div>
+  <div>
+    <a class="btn ghost small" href="/judge/record">Signed Participation Record</a>
+  </div>
+</div>
 
 {% for e in events %}{% set rows = by_event[e.id] %}{% set done = rows | selectattr("status", "equalto", "done") | list | length %}
 <div class="section-head"><h2>{{ e.name }}</h2><span class="mono">{{ done }} of {{ rows | length }} done</span></div>
