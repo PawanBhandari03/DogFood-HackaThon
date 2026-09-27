@@ -1,0 +1,35 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+{% if duplicates %}
+<div class="panel alert">
+  <h3>{{ duplicates | length }} possible duplicate{{ "s" if duplicates | length > 1 }} need a decision</h3>
+  <p class="small">A team filed more than one project. The later one is left out of the ranking until you decide.</p>
+  {% for d in duplicates %}
+  <div style="border-top:1px solid var(--rule);padding:10px 0">
+    <strong>{{ d.title }}</strong> <span class="mono small">{{ d.external_id or d.id }}</span> by {{ d.team.name }},
+    filed {{ d.submitted_at | dt }}. Looks like a second copy of
+    <strong>{{ d.duplicate_of.title }}</strong> <span class="mono small">{{ d.duplicate_of.external_id or d.duplicate_of.id }}</span>,
+    filed {{ d.duplicate_of.submitted_at | dt }}{% if d.repo_url and d.repo_url == d.duplicate_of.repo_url %}, same repository{% endif %}.
+    <div class="actions" style="margin-top:8px">
+      <form method="post" action="/events/{{ event.slug }}/manage/duplicates/{{ d.id }}" class="inline">
+        <button class="btn small" name="action" value="withdraw" type="submit">Withdraw the later copy</button></form>
+      <form method="post" action="/events/{{ event.slug }}/manage/duplicates/{{ d.id }}" class="inline">
+        <button class="btn small ghost" name="action" value="replace" type="submit">Keep the later one instead</button></form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div hx-get="/events/{{ event.slug }}/manage/progress" hx-trigger="every 10s" hx-swap="innerHTML">
+  {% include "manage/_progress.html" %}
+</div>
+
+<div class="section-head"><h2>Exports</h2></div>
+<div class="actions" style="margin-top:0">
+  <a class="btn ghost" href="/api/events/{{ event.slug }}/export/results.csv">Results CSV</a>
+  <a class="btn ghost" href="/api/events/{{ event.slug }}/export/scores.csv">All score sheets CSV</a>
+  <a class="btn ghost" href="/api/events/{{ event.slug }}/export/projects.csv">Projects CSV</a>
+  <a class="btn ghost" href="/api/events/{{ event.slug }}/export.json">Whole event (JSON)</a>
+</div>
+{% endblock %}

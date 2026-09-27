@@ -1,0 +1,58 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+<div class="split">
+  <section>
+    <h2>Event details</h2>
+    <form method="post" action="/events/{{ event.slug }}/manage/settings">
+      <label for="name">Name</label><input id="name" name="name" type="text" value="{{ event.name }}" required>
+      <label for="tagline">Tagline</label><input id="tagline" name="tagline" type="text" value="{{ event.tagline }}">
+      <label for="description">Description</label><textarea id="description" name="description">{{ event.description }}</textarea>
+      <div class="row">
+        <div><label for="starts_at">Opens (UTC)</label><input id="starts_at" name="starts_at" type="datetime-local" value="{{ event.starts_at | input_dt }}" required></div>
+        <div><label for="submissions_close_at">Submissions close (UTC)</label><input id="submissions_close_at" name="submissions_close_at" type="datetime-local" value="{{ event.submissions_close_at | input_dt }}" required></div>
+        <div><label for="judging_close_at">Judging closes (UTC, optional)</label><input id="judging_close_at" name="judging_close_at" type="datetime-local" value="{{ event.judging_close_at | input_dt }}"></div>
+      </div>
+      <div class="row">
+        <div><label for="max_team_size">Max team size</label><input id="max_team_size" name="max_team_size" type="number" min="1" max="20" value="{{ event.max_team_size }}"></div>
+        <div><label for="reviews_per_project">Reviews per project</label><input id="reviews_per_project" name="reviews_per_project" type="number" min="1" max="20" value="{{ event.reviews_per_project }}"></div>
+        <div><label for="shrinkage_k">Normalization prior k</label><input id="shrinkage_k" name="shrinkage_k" type="number" step="0.5" min="0" max="50" value="{{ event.shrinkage_k }}">
+          <p class="hint">How many "average" sheets each judge is assumed to have. Higher = gentler correction.</p></div>
+      </div>
+      <div class="actions"><button class="btn" type="submit">Save event</button></div>
+    </form>
+  </section>
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>Tracks</h3>
+      <ul style="padding-left:18px">{% for t in event.tracks %}<li>{{ t.name }}
+        <form method="post" action="/events/{{ event.slug }}/manage/tracks/{{ t.id }}/delete" class="inline"><button class="linkbutton small muted" type="submit">delete</button></form></li>
+        {% else %}<li class="muted">No tracks.</li>{% endfor %}</ul>
+      <form method="post" action="/events/{{ event.slug }}/manage/tracks">
+        <label for="track-name">New track</label><input id="track-name" name="name" type="text" required>
+        <div class="actions"><button class="btn small" type="submit">Add track</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Prizes</h3>
+      <ul style="padding-left:18px">{% for p in event.prizes %}<li>{{ p.name }}{% if p.reward %}: {{ p.reward }}{% endif %}{% if p.track %} ({{ p.track.name }}){% endif %}
+        <form method="post" action="/events/{{ event.slug }}/manage/prizes/{{ p.id }}/delete" class="inline"><button class="linkbutton small muted" type="submit">delete</button></form></li>
+        {% else %}<li class="muted">No prizes.</li>{% endfor %}</ul>
+      <form method="post" action="/events/{{ event.slug }}/manage/prizes">
+        <label for="prize-name">Prize</label><input id="prize-name" name="name" type="text" required>
+        <label for="prize-reward">Reward</label><input id="prize-reward" name="reward" type="text">
+        <label for="prize-track">Track</label><select id="prize-track" name="track_id"><option value="">Any track</option>
+          {% for t in event.tracks %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select>
+        <div class="actions"><button class="btn small" type="submit">Add prize</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Organizers</h3>
+      <ul style="padding-left:18px">{% for u in organizers %}<li>{{ u.name }} <span class="mono small muted">{{ u.email }}</span></li>{% endfor %}</ul>
+      <form method="post" action="/events/{{ event.slug }}/manage/organizers">
+        <label for="org-email">Add by email</label><input id="org-email" name="email" type="email" required>
+        <div class="actions"><button class="btn small" type="submit">Add organizer</button></div>
+      </form>
+    </div>
+  </aside>
+</div>
+{% endblock %}

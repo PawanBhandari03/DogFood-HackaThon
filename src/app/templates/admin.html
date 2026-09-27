@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div class="kicker">Admin</div>
+<h1>People on this instance</h1>
+<p class="deck">{{ total }} accounts. Admins can do everything; event creators can start new events and organize them.</p>
+<form method="get" class="row" role="search" style="align-items:end;margin-bottom:20px">
+  <div><label for="q">Find someone</label><input id="q" name="q" type="search" value="{{ q }}" placeholder="Name or email"></div>
+  <div class="actions" style="margin:0"><button class="btn" type="submit">Search</button></div>
+</form>
+<div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th>Email</th><th>Admin</th><th>Creates events</th></tr></thead>
+  <tbody>{% for u in users %}
+    <tr><td>{{ u.name }}</td><td class="mono small">{{ u.email }}</td>
+      {% for flag, on in [("is_admin", u.is_admin), ("can_create_events", u.can_create_events)] %}
+      <td><form method="post" action="/admin/users/{{ u.id }}" class="inline">
+        <input type="hidden" name="flag" value="{{ flag }}"><input type="hidden" name="value" value="{{ '0' if on else '1' }}">
+        <button class="btn small {{ '' if on else 'ghost' }}" type="submit">{{ "yes" if on else "no" }}</button></form></td>
+      {% endfor %}</tr>
+  {% endfor %}</tbody>
+</table></div>
+{% if recent %}
+<div class="section-head"><h2>Instance log</h2><span class="mono">changes outside any one event</span></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>When (UTC)</th><th>Who</th><th>Action</th><th>Detail</th></tr></thead>
+  <tbody>{% for e in recent %}<tr><td class="num">{{ e.at.strftime("%Y-%m-%d %H:%M:%S") }}</td><td class="small">{{ e.actor.name if e.actor else "—" }}</td>
+    <td class="mono small">{{ e.action }}</td><td class="mono small">{{ e.detail | tojson if e.detail else "" }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endif %}
+{% endblock %}

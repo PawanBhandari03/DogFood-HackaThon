@@ -1,0 +1,22 @@
+{% macro stamp(kind, text=None) -%}
+<span class="stamp {{ kind }}">{{ text or kind }}</span>
+{%- endmacro %}
+
+{% macro phase_stamp(event) -%}
+{% set p = event.phase(now) %}
+{{ stamp(p, {"upcoming": "upcoming", "open": "open", "judging": "closed · judging", "results": "results out"}[p]) }}
+{%- endmacro %}
+
+{% macro project_card(p, show_event=False) -%}
+<article class="article">
+  <div class="kicker">{{ p.track.name if p.track else "No track" }}{% if show_event %} · {{ p.event.name }}{% endif %}</div>
+  <h3><a href="/projects/{{ p.external_id or p.id }}">{{ p.title }}</a></h3>
+  <p>{{ p.summary }}</p>
+  <div class="byline">by {{ p.team.name }}{% if p.submitted_at %} · filed {{ p.submitted_at | dt }}{% endif %}</div>
+</article>
+{%- endmacro %}
+
+{% macro bar(done, total, target=None) -%}
+{% set pct = (100 * done / total) | round | int if total else 0 %}
+<div class="bar{% if target and done < target %} warn{% endif %}" role="img" aria-label="{{ done }} of {{ total }} done"><span style="width: {{ pct }}%"></span></div>
+{%- endmacro %}

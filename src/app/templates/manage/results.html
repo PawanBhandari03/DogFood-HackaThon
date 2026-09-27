@@ -1,0 +1,56 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+{% set n = res.normalization %}
+<div class="desk-head">
+  <div>
+    <h2 style="margin:0">Raw vs normalized</h2>
+    <p class="muted" style="margin:4px 0 0">Event mean {{ n.global_mean | num }} · spread {{ n.global_sd | num }} · prior k = {{ n.k }}</p>
+  </div>
+  <form method="post" action="/events/{{ event.slug }}/manage/results/publish" class="actions" style="margin:0">
+    {% if event.results_published_at %}
+      <span class="stamp results">published {{ event.results_published_at | dt }}</span>
+      <button class="btn ghost small" name="action" value="unpublish" type="submit">Hide results</button>
+    {% else %}
+      <button class="btn" name="action" value="publish" type="submit" {% if event.submissions_open(now) %}disabled title="Submissions are still open"{% endif %}>Publish results</button>
+    {% endif %}
+    <a class="btn ghost small" href="/events/{{ event.slug }}/results">Public page</a>
+  </form>
+</div>
+
+<div class="table-wrap" style="margin-top:20px"><table>
+  <thead><tr><th>#</th><th>Project</th><th class="num">Reviews</th><th class="num">Raw</th><th class="num">Raw #</th>
+    <th class="num">Normalized</th><th class="num">± s.e.</th><th class="num">Move</th></tr></thead>
+  <tbody>
+  {% for r in res.rows %}{% set p = res.projects[r.project_id] %}
+    <tr><td class="rank">{{ r.rank or "–" }}</td>
+      <td>{{ p.title }}<div class="byline">{{ p.team.name }} · {{ p.track.name if p.track else "" }}</div></td>
+      <td class="num">{{ r.n }}{% if r.n < event.reviews_per_project %} <span class="down">▲</span>{% endif %}</td>
+      <td class="num">{{ r.raw_mean | num }}</td><td class="num">{{ r.raw_rank or "" }}</td>
+      <td class="num"><strong>{{ r.normalized_mean | num }}</strong></td><td class="num">{{ r.stderr | num }}</td>
+      <td class="num">{% if r.movement %}<span class="{{ 'up' if r.movement > 0 else 'down' }}">{{ "+" if r.movement > 0 }}{{ r.movement }}</span>{% else %}–{% endif %}</td></tr>
+  {% endfor %}
+  {% for p in res.excluded %}
+    <tr class="excluded"><td class="rank">–</td><td>{{ p.title }} <span class="stamp {{ 'duplicate' if p.duplicate_of_id else p.status }}">{{ "duplicate?" if p.duplicate_of_id else p.status }}</span>
+      <div class="byline">{{ p.team.name }} · left out of the ranking</div></td><td colspan="6"></td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+<p class="small muted"><span class="down">▲</span> fewer finished reviews than the event target of {{ event.reviews_per_project }}: treat its score with more caution.
+  "Move" is how many places normalization moved the project compared with ranking by raw average.</p>
+
+<div class="section-head"><h2>Judge calibration</h2><span class="mono">what normalization corrected</span></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>Judge</th><th class="num">Sheets</th><th class="num">Their mean</th><th class="num">Their spread</th>
+    <th class="num">Used mean</th><th class="num">Used spread</th><th>Reading</th></tr></thead>
+  <tbody>{% for js in n.judges.values() | sort(attribute="mean") %}{% set u = judge_names.get(js.judge_id) %}
+    <tr><td>{{ u.name if u else js.judge_id }}</td><td class="num">{{ js.n }}</td>
+      <td class="num">{{ js.mean | num }}</td><td class="num">{{ js.sd | num }}</td>
+      <td class="num">{{ js.shrunk_mean | num }}</td><td class="num">{{ js.shrunk_sd | num }}</td>
+      <td class="small">{% if js.sd == 0 and js.n > 1 %}gives every project the same score: little ranking information
+        {% elif js.n <= 2 %}too few sheets to trust: mostly pulled to the event average
+        {% elif js.mean < n.global_mean - 5 %}harsh
+        {% elif js.mean > n.global_mean + 5 %}generous
+        {% else %}close to the event average{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% endblock %}

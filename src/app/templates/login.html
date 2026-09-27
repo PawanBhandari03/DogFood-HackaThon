@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="form-narrow">
+  <div class="kicker">Members' entrance</div>
+  <h1>Log in</h1>
+  {% if error %}<div class="flash" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" value="{{ email }}" autocomplete="username" required autofocus>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <div class="actions"><button class="btn" type="submit">Log in</button>
+      <a href="/register?next={{ next|urlencode }}">No account? Register</a></div>
+  </form>
+  {% if demo_mode %}
+  <div class="panel" style="margin-top:32px">
+    <h3>Demo accounts</h3>
+    <p class="small">Every seeded account uses the password <span class="mono">dogfood-demo</span>.</p>
+    <dl class="dl small">
+      <dt>Admin</dt><dd class="mono">admin@dogfood.local</dd>
+      <dt>Organizer</dt><dd class="mono">organizer@dogfood.local</dd>
+      <dt>Judge</dt><dd class="mono">diego.herrera@example.org</dd>
+      <dt>Participant</dt><dd class="mono">priya1@example.org</dd>
+    </dl>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Results not published{% endblock %}
+{% block content %}
+<div class="kicker"><a href="/events/{{ event.slug }}">{{ event.name }}</a></div>
+<h1>Results are not published yet</h1>
+<p class="deck">The standings stay sealed until the organizers publish them. Check back later.</p>
+{% endblock %}

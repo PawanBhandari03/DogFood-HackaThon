@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Join {{ team.name }}{% endblock %}
+{% block content %}
+<div class="form-narrow">
+  <div class="kicker">{{ event.name }} · invitation</div>
+  <h1>Join {{ team.name }}?</h1>
+  <p class="deck">{{ team.members | length }} of {{ event.max_team_size }} places taken:
+    {% for m in team.members %}{{ m.user.name }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+  {% if current and current.team_id == team.id %}
+    <p>You are already in this team. <a href="/events/{{ event.slug }}/team">Go to the team page</a>.</p>
+  {% elif current %}
+    <p>You are already in another team for this event. Leave it first if you want to switch.</p>
+  {% elif not event.submissions_open(now) %}
+    <p>This event is not accepting team changes right now.</p>
+  {% else %}
+    <form method="post" action="/join/{{ team.invite_code }}"><button class="btn" type="submit">Join the team</button></form>
+  {% endif %}
+</div>
+{% endblock %}

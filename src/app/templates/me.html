@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stamp, phase_stamp, bar with context %}
+{% block title %}Your desk{% endblock %}
+{% block content %}
+<div class="kicker">Your desk</div>
+<h1>Hello, {{ viewer.user.name }}</h1>
+<p class="deck">Everything you are part of, in one place.</p>
+
+{% if organizing %}
+<div class="section-head"><h2>Events you organize</h2>
+  {% if viewer.is_admin or viewer.user.can_create_events %}<a class="btn small" href="/events/new">New event</a>{% endif %}</div>
+<div class="table-wrap"><table>
+  <thead><tr><th>Event</th><th>Status</th><th>Closes</th><th></th></tr></thead>
+  <tbody>{% for e in organizing %}
+    <tr><td><a href="/events/{{ e.slug }}">{{ e.name }}</a></td><td>{{ phase_stamp(e) }}</td>
+      <td class="num">{{ e.submissions_close_at | dt }}</td>
+      <td><a class="btn small" href="/events/{{ e.slug }}/manage">Organizer desk</a></td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% endif %}
+
+{% if judging %}
+<div class="section-head"><h2>Events you judge</h2><a class="btn small" href="/judge">Judge desk</a></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>Event</th><th class="num">Done</th><th>Progress</th></tr></thead>
+  <tbody>{% for e, done, total in judging %}
+    <tr><td>{{ e.name }}</td><td class="num">{{ done }} / {{ total }}</td><td style="width:40%">{{ bar(done, total) }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% endif %}
+
+<div class="section-head"><h2>Your teams</h2></div>
+{% if memberships %}
+<div class="columns">
+  {% for m in memberships %}{% set p = team_projects.get(m.team_id) %}
+  <article class="article">
+    <div class="kicker">{{ m.team.event.name }}</div>
+    <h3><a href="/events/{{ m.team.event.slug }}/team">{{ m.team.name }}</a></h3>
+    {% if p %}<p>{{ p.title }} {{ stamp(p.status) }}</p>{% else %}<p class="muted">No project yet.</p>{% endif %}
+    <div class="byline">{{ "lead" if m.is_lead else "member" }} · closes {{ m.team.event.submissions_close_at | dt }}</div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p>You are not on a team yet. <a href="/">Pick an event</a> and start one, or open an invite link from a teammate.</p>
+{% endif %}
+{% endblock %}

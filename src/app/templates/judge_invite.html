@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Judge invitation{% endblock %}
+{% block content %}
+<div class="form-narrow">
+  <div class="kicker">{{ event.name }} · judge invitation</div>
+  <h1>You are invited to judge</h1>
+  <p class="deck">This invitation is for <span class="mono">{{ invite.email }}</span>.</p>
+  {% if invite.accepted_at %}
+    <p>This invitation was already accepted.</p>
+  {% elif invite.email != viewer.user.email %}
+    <p>You are logged in as <span class="mono">{{ viewer.user.email }}</span>. Log out and log in (or register) with the invited email to accept.</p>
+  {% else %}
+    <form method="post" action="/judge/invite/{{ invite.token }}"><button class="btn" type="submit">Accept and start judging</button></form>
+  {% endif %}
+</div>
+{% endblock %}

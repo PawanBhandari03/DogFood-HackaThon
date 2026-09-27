@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}New event{% endblock %}
+{% block content %}
+<div class="form-narrow">
+  <div class="kicker">Organizer desk</div>
+  <h1>Start a new event</h1>
+  {% if error %}<div class="flash" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/events/new">
+    <label for="name">Event name</label>
+    <input id="name" name="name" type="text" required maxlength="200">
+    <label for="tagline">Tagline</label>
+    <input id="tagline" name="tagline" type="text" maxlength="300">
+    <div class="row">
+      <div><label for="starts_at">Opens (UTC)</label><input id="starts_at" name="starts_at" type="datetime-local" required></div>
+      <div><label for="submissions_close_at">Submissions close (UTC)</label><input id="submissions_close_at" name="submissions_close_at" type="datetime-local" required></div>
+    </div>
+    <label for="tracks">Tracks, one per line</label>
+    <textarea id="tracks" name="tracks" placeholder="Developer tools&#10;Climate&#10;Education"></textarea>
+    <p class="hint">You can add prizes, change the rubric and invite judges on the next screen.</p>
+    <div class="actions"><button class="btn" type="submit">Create event</button></div>
+  </form>
+</div>
+{% endblock %}

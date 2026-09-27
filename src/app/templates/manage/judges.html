@@ -1,0 +1,41 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+<div class="split">
+  <section>
+    <h2>Judges · {{ judges | length }}</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Judge</th><th>Tracks</th><th class="num">Reviews</th></tr></thead>
+      <tbody>{% for j in judges %}{% set l = load.get(j.id, (0, 0)) %}
+        <tr><td>{{ j.name }}<div class="byline">{{ j.email }}</div></td>
+          <td class="small">{{ tracks_by_judge.get(j.id, []) | join(", ") or "any" }}</td>
+          <td class="num">{{ l[0] }}/{{ l[1] }}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">No judges yet. Invite some.</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>Invite a judge</h3>
+      <form method="post" action="/events/{{ event.slug }}/manage/judges/invite">
+        <label for="email">Email</label><input id="email" name="email" type="email" required>
+        {% if event.tracks %}<fieldset><legend>Tracks they cover</legend><div class="checks">
+          {% for t in event.tracks %}<label><input type="checkbox" name="tracks" value="{{ t.id }}"> {{ t.name }}</label>{% endfor %}
+        </div></fieldset>{% endif %}
+        <div class="actions"><button class="btn small" type="submit">Create invitation</button></div>
+      </form>
+      <p class="hint">Broadsheet works offline and sends no email: copy the link and send it yourself.
+        Only the invited email address can accept it.</p>
+    </div>
+    {% if invites %}
+    <div class="panel">
+      <h3>Invitations</h3>
+      {% for i in invites %}
+      <div style="border-top:1px solid var(--rule);padding:8px 0">
+        <span class="mono small">{{ i.email }}</span> {% if i.accepted_at %}<span class="stamp done">accepted</span>{% else %}<span class="stamp pending">waiting</span>
+        <code class="copy" style="margin-top:6px">{{ base_url }}/judge/invite/{{ i.token }}</code>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

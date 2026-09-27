@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stamp, bar with context %}
+{% block title %}Judge desk{% endblock %}
+{% block content %}
+<div class="kicker">Judge desk</div>
+<h1>Your reviews</h1>
+<p class="deck">Only your own assignments and scores are shown here. Nobody else's scores ever reach this page.</p>
+
+{% for e in events %}{% set rows = by_event[e.id] %}{% set done = rows | selectattr("status", "equalto", "done") | list | length %}
+<div class="section-head"><h2>{{ e.name }}</h2><span class="mono">{{ done }} of {{ rows | length }} done</span></div>
+{{ bar(done, rows | length) }}
+{% set next = rows | selectattr("status", "equalto", "pending") | first %}
+{% if next %}<div class="actions"><a class="btn" href="/judge/assignments/{{ next.id }}">Start next review →</a></div>{% endif %}
+<div class="table-wrap" style="margin-top:20px"><table>
+  <thead><tr><th>Project</th><th>Track</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for a in rows %}
+    <tr><td>{{ a.project.title }}<div class="byline">{{ a.project.team.name }}</div></td>
+      <td>{{ a.project.track.name if a.project.track else "" }}</td>
+      <td>{{ stamp(a.status) }}</td>
+      <td><a class="btn small {{ 'ghost' if a.status == 'done' else '' }}" href="/judge/assignments/{{ a.id }}">{{ "Review" if a.status == "done" else "Score" }}</a></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">No assignments yet. The organizer will assign projects to you.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endfor %}
+{% endblock %}

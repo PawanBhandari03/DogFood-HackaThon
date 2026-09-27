@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stamp, phase_stamp with context %}
+{% block title %}Team · {{ event.name }}{% endblock %}
+{% block content %}
+{% set open = event.submissions_open(now) %}
+<div class="kicker"><a href="/events/{{ event.slug }}">{{ event.name }}</a> · your team</div>
+
+{% if not team %}
+  <h1>You are not on a team yet</h1>
+  {% if open %}
+  <form method="post" action="/events/{{ event.slug }}/team" class="form-narrow">
+    <label for="name">Team name</label>
+    <input id="name" name="name" type="text" required maxlength="120">
+    <div class="actions"><button class="btn" type="submit">Start a team</button></div>
+  </form>
+  <p class="hint">To join an existing team, open the invite link its lead shared with you.</p>
+  {% else %}<p class="deck">Submissions for this event are closed.</p>{% endif %}
+{% else %}
+<div class="desk-head">
+  <div><h1>{{ team.name }}</h1>
+    <p class="deck">{% if open %}Deadline {{ event.submissions_close_at | dt }}. You can edit until then.{% else %}Submissions closed {{ event.submissions_close_at | dt }}. Nothing can change now.{% endif %}</p></div>
+  <div>{{ phase_stamp(event) }}</div>
+</div>
+
+<div class="split">
+  <section>
+    <div class="section-head" style="margin-top:0"><h2>Your project</h2>
+      {% if project %}{{ stamp(project.status) }}{% endif %}</div>
+    {% if open %}
+    <form method="post" action="/events/{{ event.slug }}/project">
+      <label for="title">Title</label>
+      <input id="title" name="title" type="text" required maxlength="200" value="{{ project.title if project else '' }}">
+      <label for="summary">One-line summary</label>
+      <input id="summary" name="summary" type="text" maxlength="500" value="{{ project.summary if project else '' }}">
+      <label for="description">Description</label>
+      <textarea id="description" name="description">{{ project.description if project else '' }}</textarea>
+      <div class="row">
+        <div><label for="repo_url">Repository URL</label>
+          <input id="repo_url" name="repo_url" type="url" placeholder="https://" value="{{ project.repo_url if project else '' }}"></div>
+        <div><label for="demo_url">Demo URL</label>
+          <input id="demo_url" name="demo_url" type="url" placeholder="https://" value="{{ project.demo_url if project else '' }}"></div>
+      </div>
+      {% if event.tracks %}
+      <label for="track_id">Track</label>
+      <select id="track_id" name="track_id"><option value="">Choose a track</option>
+        {% for t in event.tracks %}<option value="{{ t.id }}" {% if project and project.track_id == t.id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <div class="actions"><button class="btn" type="submit">Save draft</button></div>
+    </form>
+    {% if project %}
+    <div class="actions">
+      {% if project.status == "draft" %}
+        <form method="post" action="/events/{{ event.slug }}/project/submit" class="inline"><button class="btn" type="submit">Submit for judging</button></form>
+      {% elif project.status == "submitted" %}
+        <form method="post" action="/events/{{ event.slug }}/project/unsubmit" class="inline"><button class="btn ghost" type="submit">Back to draft</button></form>
+      {% endif %}
+      <form method="post" action="/events/{{ event.slug }}/project/withdraw" class="inline"
+            onsubmit="return confirm('Withdraw this project? It will not be judged.')"><button class="btn danger" type="submit">Withdraw</button></form>
+      {% if project.status == "submitted" %}<a href="/projects/{{ project.external_id or project.id }}">View in gallery</a>{% endif %}
+    </div>
+    {% endif %}
+    {% elif project %}
+      <h3>{{ project.title }}</h3><p>{{ project.summary }}</p>
+      <a href="/projects/{{ project.external_id or project.id }}">View project page</a>
+    {% else %}<p class="muted">Your team did not submit a project.</p>{% endif %}
+  </section>
+
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>Members · {{ team.members | length }} of {{ event.max_team_size }}</h3>
+      <ul style="padding-left:18px;margin:0">
+        {% for m in team.members %}<li>{{ m.user.name }}{% if m.is_lead %} <span class="kicker">lead</span>{% endif %}
+          {% if member.is_lead and not m.is_lead and open %}
+          <form method="post" action="/events/{{ event.slug }}/team/remove/{{ m.user_id }}" class="inline"><button class="linkbutton small muted" type="submit">remove</button></form>{% endif %}</li>{% endfor %}
+      </ul>
+    </div>
+    {% if open %}
+    <div class="panel">
+      <h3>Invite link</h3>
+      <p class="small">Anyone with this link can join, until the team is full or the deadline passes.</p>
+      <code class="copy">{{ invite_url }}</code>
+      {% if member.is_lead %}
+      <form method="post" action="/events/{{ event.slug }}/team/rotate-invite" class="actions"><button class="btn small ghost" type="submit">New link (old one stops working)</button></form>
+      {% endif %}
+    </div>
+    <form method="post" action="/events/{{ event.slug }}/team/leave" onsubmit="return confirm('Leave this team?')"><button class="btn small danger" type="submit">Leave team</button></form>
+    {% endif %}
+  </aside>
+</div>
+{% endif %}
+{% endblock %}

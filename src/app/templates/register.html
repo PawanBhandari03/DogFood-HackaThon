@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="form-narrow">
+  <div class="kicker">New subscriber</div>
+  <h1>Register</h1>
+  {% if error %}<div class="flash" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/register">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="name">Name</label>
+    <input id="name" name="name" type="text" value="{{ name }}" autocomplete="name" required maxlength="200">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" value="{{ email }}" autocomplete="email" required>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+    <p class="hint">At least 8 characters.</p>
+    <div class="actions"><button class="btn" type="submit">Create account</button>
+      <a href="/login?next={{ next|urlencode }}">Have an account? Log in</a></div>
+  </form>
+</div>
+{% endblock %}

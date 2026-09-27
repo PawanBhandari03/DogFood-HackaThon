@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_macros.html" import phase_stamp with context %}
+{% block title %}Events{% endblock %}
+{% block content %}
+{% set lead = events[0] if events else None %}
+{% if lead %}
+<section class="lead-story">
+  <div>
+    <div class="kicker">Lead story</div>
+    <h1><a href="/events/{{ lead.slug }}" style="text-decoration:none">{{ lead.name }}</a></h1>
+    <p class="deck">{{ lead.tagline or "A hackathon, run on software you host yourself." }}</p>
+    <div class="actions">
+      <a class="btn" href="/events/{{ lead.slug }}">Read the event</a>
+      <a class="btn ghost" href="/projects?event={{ lead.slug }}">Browse its projects</a>
+    </div>
+  </div>
+  <div>
+    {{ phase_stamp(lead) }}
+    <dl class="dl" style="margin-top:16px">
+      <dt>Opens</dt><dd>{{ lead.starts_at | dt }}</dd>
+      <dt>Closes</dt><dd>{{ lead.submissions_close_at | dt }}</dd>
+      <dt>Entries</dt><dd>{{ counts.get(lead.id, 0) }} submitted</dd>
+    </dl>
+  </div>
+</section>
+{% endif %}
+
+<div class="section-head"><h2>All events</h2>
+  {% if viewer and viewer.user and (viewer.is_admin or viewer.user.can_create_events) %}
+  <a class="btn small" href="/events/new">New event</a>{% endif %}
+</div>
+{% if events %}
+<div class="columns">
+  {% for e in events %}
+  <article class="article">
+    <div class="kicker">{{ e.tracks | length }} tracks · {{ counts.get(e.id, 0) }} entries</div>
+    <h3><a href="/events/{{ e.slug }}">{{ e.name }}</a></h3>
+    <p>{{ e.tagline }}</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span class="byline">closes {{ e.submissions_close_at | dt }}</span>{{ phase_stamp(e) }}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">No events yet.</p>
+{% endif %}
+{% endblock %}

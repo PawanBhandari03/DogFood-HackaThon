@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Broadsheet{% endblock %} · Broadsheet</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/css/broadsheet.css">
+  <script src="/static/js/htmx.min.js" defer></script>
+</head>
+<body>
+  <div class="dateline">
+    <div class="wrap">
+      <span>{{ now.strftime("%a %d %b %Y") }} · self-hosted edition</span>
+      <nav aria-label="Main">
+        <a href="/projects">Gallery</a>
+        <a href="/">Events</a>
+        {% if viewer and viewer.is_authenticated %}
+          {% if viewer.judge_event_ids %}<a href="/judge">Judge desk</a>{% endif %}
+          {% if viewer.is_admin %}<a href="/admin">Admin</a>{% endif %}
+          <a href="/me">{{ viewer.user.name }}</a>
+          <form method="post" action="/logout"><button class="linkbutton" type="submit">Log out</button></form>
+        {% else %}
+          <a href="/login">Log in</a>
+          <a href="/register">Register</a>
+        {% endif %}
+      </nav>
+    </div>
+  </div>
+  <header class="nameplate wrap">
+    <a href="/"><span class="title">Broadsheet</span></a>
+    <div class="motto">Hackathon submissions &amp; judging, printed fresh and run by you.</div>
+  </header>
+  <div class="wrap"><hr class="double-rule"></div>
+
+  <main class="wrap" id="main">
+    {% if flash %}<div class="flash" role="status">{{ flash }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Broadsheet · MIT licensed · by Binary Builders for DOGFOOD 2026</span>
+      <span><a href="/api/docs">API</a> · all times UTC{% if demo_mode %} · demo mode{% endif %}</span>
+    </div>
+  </footer>
+</body>
+</html>

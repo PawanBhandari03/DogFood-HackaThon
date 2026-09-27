@@ -1,0 +1,26 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+<div class="desk-head">
+  <div><h2 style="margin:0">Audit log</h2>
+    <p class="muted" style="margin:4px 0 0">Every change and every refused attempt, newest first. Nothing here can be edited or deleted.</p></div>
+  <form method="get" class="actions" style="margin:0">
+    <label class="sr-only" for="action">Filter</label>
+    <select id="action" name="action" onchange="this.form.submit()"><option value="">All actions</option>
+      {% for a in actions %}<option value="{{ a }}" {% if a == action %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+  </form>
+</div>
+<div class="table-wrap" style="margin-top:16px"><table>
+  <thead><tr><th>When (UTC)</th><th>Who</th><th>Action</th><th>What</th><th>Detail</th></tr></thead>
+  <tbody>{% for e in entries %}
+    <tr><td class="num">{{ e.at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+      <td class="small">{{ e.actor.name if e.actor else "—" }}</td>
+      <td><span class="mono {{ 'down' if e.action.startswith('denied') }}">{{ e.action }}</span></td>
+      <td class="small">{{ e.entity_type }} {{ e.entity_id or "" }}</td>
+      <td class="mono small" style="max-width:420px;word-break:break-word">{{ e.detail | tojson if e.detail else "" }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Nothing logged yet.</td></tr>{% endfor %}</tbody>
+</table></div>
+<nav class="pager">
+  {% if page > 1 %}<a href="?action={{ action }}&page={{ page - 1 }}">← Newer</a>{% endif %}
+  {% if has_more %}<a href="?action={{ action }}&page={{ page + 1 }}">Older →</a>{% endif %}
+</nav>
+{% endblock %}

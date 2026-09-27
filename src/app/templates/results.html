@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Results · {{ event.name }}{% endblock %}
+{% block content %}
+<div class="kicker"><a href="/events/{{ event.slug }}">{{ event.name }}</a> · results</div>
+<h1>The final standings</h1>
+{% if preview %}<div class="flash">Preview: only organizers can see this until results are published.</div>{% endif %}
+<p class="deck">Ranked by normalized score: each judge's leniency and spread is corrected before averaging.
+  <a href="#method">How that works</a>.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>#</th><th>Project</th><th>Team</th><th>Track</th><th class="num">Reviews</th><th class="num">Score</th></tr></thead>
+  <tbody>
+  {% for r in res.rows if r.rank %}{% set p = res.projects[r.project_id] %}
+    <tr><td class="rank">{{ r.rank }}</td>
+      <td><a href="/projects/{{ p.external_id or p.id }}">{{ p.title }}</a></td>
+      <td>{{ p.team.name }}</td><td>{{ p.track.name if p.track else "" }}</td>
+      <td class="num">{{ r.n }}</td><td class="num">{{ r.normalized_mean | num }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+
+<div class="section-head" id="method"><h2>Method</h2></div>
+<p>Each score sheet becomes a number from 0 to 100 using the organizer's weights. Then every judge's sheets are
+compared with their own average and spread (pulled toward the event average when a judge scored only a few
+projects), and placed back on the event-wide scale. A project's score is the average of its corrected sheets.
+The full derivation is in JUDGING.md in the source repository.</p>
+{% endblock %}

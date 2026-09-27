@@ -1,0 +1,35 @@
+{% from "_macros.html" import stamp, bar with context %}
+<div class="stats">
+  <div><span class="big">{{ progress.percent }}%</span><span class="label">reviews done · live</span></div>
+  <div><span class="big">{{ progress.done }}/{{ progress.assigned }}</span><span class="label">sheets filed</span></div>
+  <div><span class="big">{{ progress.projects | length }}</span><span class="label">projects submitted</span></div>
+  <div><span class="big">{{ progress.under_reviewed }}</span><span class="label">below {{ event.reviews_per_project }} reviews</span></div>
+  <div><span class="big">{{ progress.judges | length }}</span><span class="label">judges</span></div>
+</div>
+<p class="mono muted" style="margin-top:-12px">updated {{ now.strftime("%H:%M:%S") }} UTC · refreshes every 10 seconds</p>
+
+<div class="split">
+  <section>
+    <div class="section-head"><h2>Projects</h2><span class="mono">fewest reviews first</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Project</th><th>Track</th><th class="num">Done</th><th>Progress</th></tr></thead>
+      <tbody>{% for r in progress.projects %}
+        <tr><td>{{ r.project.title }}{% if r.project.duplicate_of_id %} {{ stamp("duplicate", "dup?") }}{% endif %}
+            <div class="byline">{{ r.project.team.name }}</div></td>
+          <td class="small">{{ r.project.track.name if r.project.track else "" }}</td>
+          <td class="num">{{ r.done }}/{{ r.assigned }}</td>
+          <td style="min-width:100px">{{ bar(r.done, [r.assigned, event.reviews_per_project] | max, event.reviews_per_project) }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </section>
+  <section>
+    <div class="section-head"><h2>Judges</h2><span class="mono">least done first</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Judge</th><th class="num">Done</th></tr></thead>
+      <tbody>{% for j in progress.judges %}
+        <tr><td>{{ j.judge.name }}{% if j.flat %} {{ stamp("pending", "same score everywhere") }}{% endif %}</td>
+          <td class="num">{{ j.done }}/{{ j.assigned }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </section>
+</div>

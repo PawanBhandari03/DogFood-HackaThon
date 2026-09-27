@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stamp, bar with context %}
+{% block title %}Score · {{ project.title }}{% endblock %}
+{% block content %}
+<div class="desk-head">
+  <div class="kicker"><a href="/judge">Judge desk</a> · {{ event.name }} · {{ position }} of {{ total }}</div>
+  <div class="mono">{{ done }} / {{ total }} done</div>
+</div>
+{{ bar(done, total) }}
+
+<div class="split" style="margin-top:24px">
+  <article>
+    <div class="kicker">{{ project.track.name if project.track else "No track" }}</div>
+    <h1>{{ project.title }}</h1>
+    <p class="deck">{{ project.summary }}</p>
+    {% if project.description %}{% for para in project.description.split("\n\n") %}<p>{{ para }}</p>{% endfor %}{% endif %}
+    <dl class="dl">
+      <dt>Team</dt><dd>{{ project.team.name }}</dd>
+      {% if project.repo_url %}<dt>Code</dt><dd><a href="{{ project.repo_url }}" rel="noopener nofollow" target="_blank">{{ project.repo_url }}</a></dd>{% endif %}
+      {% if project.demo_url %}<dt>Demo</dt><dd><a href="{{ project.demo_url }}" rel="noopener nofollow" target="_blank">{{ project.demo_url }}</a></dd>{% endif %}
+    </dl>
+    {% if project.duplicate_of_id %}<p>{{ stamp("duplicate", "possible duplicate") }} <span class="small muted">The organizer is checking whether this is a resubmission.</span></p>{% endif %}
+  </article>
+
+  <aside>
+    <form method="post" action="/judge/assignments/{{ a.id }}" class="panel">
+      <h3>Your score {% if a.status == "done" %}{{ stamp("done", "saved") }}{% endif %}</h3>
+      {% for c in criteria %}
+      <fieldset class="criterion" style="border:0;padding:14px 0;margin:0">
+        <legend class="name" style="padding:0;width:100%"><strong>{{ c.label }}</strong> <span class="mono muted">weight {{ c.weight | num(2) }}</span></legend>
+        {% if c.description %}<p class="small muted" style="margin:4px 0 8px">{{ c.description }}</p>{% endif %}
+        <div class="scale">
+          {% for v in range(c.min_value, c.max_value + 1) %}
+          <input type="radio" id="c{{ c.id }}-{{ v }}" name="c{{ c.id }}" value="{{ v }}" required {% if values.get(c.id) == v %}checked{% endif %}>
+          <label for="c{{ c.id }}-{{ v }}">{{ v }}</label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      {% endfor %}
+      <label for="comment">Comment for the organizers</label>
+      <textarea id="comment" name="comment" style="min-height:90px">{{ a.score.comment if a.score else "" }}</textarea>
+      <div class="actions">
+        <button class="btn" type="submit" name="then" value="next">Save &amp; next</button>
+        <button class="btn ghost" type="submit" name="then" value="stay">Save</button>
+      </div>
+    </form>
+    <nav class="pager">
+      {% if prev_id %}<a href="/judge/assignments/{{ prev_id }}">← Previous</a>{% endif %}
+      {% if next_id %}<a href="/judge/assignments/{{ next_id }}">Next →</a>{% endif %}
+    </nav>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stamp, phase_stamp, bar with context %}
+{% block title %}Organizer desk · {{ event.name }}{% endblock %}
+{% block content %}
+<div class="desk-head">
+  <div>
+    <div class="kicker">Organizer desk</div>
+    <h1 style="margin:0"><a href="/events/{{ event.slug }}" style="text-decoration:none">{{ event.name }}</a></h1>
+  </div>
+  <div>{{ phase_stamp(event) }}</div>
+</div>
+<nav class="tabs" aria-label="Organizer sections">
+  {% for key, label in [("overview", "Overview"), ("settings", "Event"), ("rubric", "Rubric"), ("judges", "Judges"),
+                        ("assignments", "Assignments"), ("results", "Results"), ("audit", "Audit log")] %}
+  <a href="/events/{{ event.slug }}/manage{{ '' if key == 'overview' else '/' ~ key }}" {% if tab == key %}aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+{% block desk %}{% endblock %}
+{% endblock %}

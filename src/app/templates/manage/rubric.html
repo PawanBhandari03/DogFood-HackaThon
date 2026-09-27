@@ -1,0 +1,38 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+{% set total = event.criteria | sum(attribute="weight") %}
+<div class="split">
+  <section>
+    <h2>Scoring rubric</h2>
+    <p>Judges score every criterion on its own scale. A sheet's score is the weighted average of those values,
+      each rescaled to 0–100. Change a weight and every result is recalculated; judges do not need to rescore.</p>
+    <form method="post" action="/events/{{ event.slug }}/manage/rubric">
+      <div class="table-wrap"><table>
+        <thead><tr><th>Criterion</th><th>Scale</th><th class="num">Weight</th><th class="num">Share</th><th></th></tr></thead>
+        <tbody>{% for c in event.criteria %}
+          <tr><td><label class="sr-only" for="l{{ c.id }}">Label</label><input id="l{{ c.id }}" name="l{{ c.id }}" type="text" value="{{ c.label }}"></td>
+            <td class="num">{{ c.min_value }}–{{ c.max_value }}</td>
+            <td class="num" style="width:120px"><label class="sr-only" for="w{{ c.id }}">Weight</label><input id="w{{ c.id }}" name="w{{ c.id }}" type="number" step="0.05" min="0" value="{{ c.weight }}"></td>
+            <td class="num">{{ (100 * c.weight / total) | round | int if total else 0 }}%</td>
+            <td>{% if c.id not in used %}<button class="linkbutton small muted" type="submit" formaction="/events/{{ event.slug }}/manage/rubric/{{ c.id }}/delete">delete</button>
+                {% else %}<span class="small muted" title="Judges have scored this">in use</span>{% endif %}</td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+      <div class="actions"><button class="btn" type="submit">Save weights</button></div>
+    </form>
+  </section>
+  <aside class="panel">
+    <h3>Add a criterion</h3>
+    <form method="post" action="/events/{{ event.slug }}/manage/rubric/add">
+      <label for="label">Name</label><input id="label" name="label" type="text" required>
+      <div class="row">
+        <div><label for="min_value">Min</label><input id="min_value" name="min_value" type="number" value="1"></div>
+        <div><label for="max_value">Max</label><input id="max_value" name="max_value" type="number" value="5"></div>
+      </div>
+      <label for="weight">Weight</label><input id="weight" name="weight" type="number" step="0.05" min="0" value="1">
+      <div class="actions"><button class="btn small" type="submit">Add</button></div>
+    </form>
+    <p class="hint">Sheets filed before a criterion existed are scored on the criteria they have.</p>
+  </aside>
+</div>
+{% endblock %}

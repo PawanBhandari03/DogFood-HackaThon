@@ -1,0 +1,43 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+<div class="split">
+  <section>
+    <h2>Who reviews what</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Project</th><th>Judges</th></tr></thead>
+      <tbody>{% for p in projects %}
+        <tr><td>{{ p.title }}<div class="byline">{{ p.track.name if p.track else "no track" }} · {{ p.team.name }}</div></td>
+          <td>{% for a in by_project.get(p.id, []) %}
+            <div class="small">{{ a.judge.name }} <span class="stamp {{ a.status }}">{{ a.status }}</span>
+              <span class="mono muted">{{ a.method }}</span>
+              {% if a.status == "pending" %}<form method="post" action="/events/{{ event.slug }}/manage/assignments/{{ a.id }}/delete" class="inline"><button class="linkbutton small muted" type="submit">unassign</button></form>{% endif %}</div>
+          {% else %}<span class="muted small">nobody yet</span>{% endfor %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </section>
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>Assign automatically</h3>
+      <p class="small">Fills every project up to the target number of reviews. Judges from the project's track first,
+        fewest assignments first, never a judge on the project's own team. The seed makes a run repeatable.</p>
+      <form method="post" action="/events/{{ event.slug }}/manage/assignments/auto">
+        <div class="row">
+          <div><label for="per_project">Reviews per project</label><input id="per_project" name="per_project" type="number" min="1" max="20" value="{{ event.reviews_per_project }}"></div>
+          <div><label for="seed">Seed</label><input id="seed" name="seed" type="number" value="{{ seed }}"></div>
+        </div>
+        <div class="actions"><button class="btn small" type="submit">Run assignment</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Assign by hand</h3>
+      <form method="post" action="/events/{{ event.slug }}/manage/assignments/add">
+        <label for="project_id">Project</label><select id="project_id" name="project_id">
+          {% for p in projects %}<option value="{{ p.id }}">{{ p.title }} ({{ p.team.name }})</option>{% endfor %}</select>
+        <label for="judge_id">Judge</label><select id="judge_id" name="judge_id">
+          {% for j in judges %}<option value="{{ j.id }}">{{ j.name }}</option>{% endfor %}</select>
+        <div class="actions"><button class="btn small" type="submit">Assign</button></div>
+      </form>
+    </div>
+  </aside>
+</div>
+{% endblock %}
