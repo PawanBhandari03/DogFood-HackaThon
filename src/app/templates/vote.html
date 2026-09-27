@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Vote · {{ event.name }}{% endblock %}
+{% block content %}
+<div class="desk-head">
+  <div>
+    <div class="kicker"><a href="/events/{{ event.slug }}">{{ event.name }}</a> · Community Ballot</div>
+    <h1>Cast your votes</h1>
+    <p class="deck">Choose up to {{ max_votes }} projects. Each voter sees a randomized ballot.</p>
+  </div>
+</div>
+
+{% if not is_open %}
+  <div class="panel">
+    {% if event.voting_mode != "authenticated" %}
+      <h3>Voting is not enabled</h3>
+      <p>Community voting is turned off for this event.</p>
+    {% elif event.voting_open_at and now < event.voting_open_at %}
+      <h3>Voting is not open yet</h3>
+      <p>Voting opens on {{ event.voting_open_at | dt }}.</p>
+    {% else %}
+      <h3>Voting has closed</h3>
+      <p>Voting closed on {{ event.voting_close_at | dt }}. <a href="/events/{{ event.slug }}/community">View community results</a>.</p>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="stats">
+    <div><span class="big">{{ voted_count }} / {{ max_votes }}</span><span class="label">votes cast</span></div>
+    <div><span class="big">{{ projects | length }}</span><span class="label">projects on ballot</span></div>
+    <div><span class="big">{{ event.voting_close_at | dt }}</span><span class="label">voting closes</span></div>
+  </div>
+
+  {% if is_judge_or_organizer %}
+    <div class="flash">You are a judge or organizer of this event and cannot vote.</div>
+  {% endif %}
+
+  <div class="columns">
+    {% for p in projects %}
+      <article class="article">
+        <h3><a href="/projects/{{ p.external_id or p.id }}">{{ p.title }}</a></h3>
+        <p class="muted">{{ p.team.name }}{% if p.track %} · {{ p.track.name }}{% endif %}</p>
+        {% if p.summary %}<p>{{ p.summary }}</p>{% endif %}
+
+        <div class="actions" style="margin-top: 1rem;">
+          {% if p.id in voted_project_ids %}
+            <form method="post" action="/events/{{ event.slug }}/unvote/{{ p.id }}">
+              <button class="btn ghost" type="submit">✓ Voted (retract)</button>
+            </form>
+          {% elif own_team_id and p.team_id == own_team_id %}
+            <span class="stamp">Your team</span>
+          {% elif not is_judge_or_organizer and voted_count < max_votes %}
+            <form method="post" action="/events/{{ event.slug }}/vote/{{ p.id }}">
+              <button class="btn" type="submit">Vote for this project</button>
+            </form>
+          {% elif not is_judge_or_organizer %}
+            <button class="btn" disabled title="Max votes reached">All votes used</button>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

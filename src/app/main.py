@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.db import SessionLocal
-from app.routers import account, admin, api, judge, organizer, public, teams
+from app.routers import account, admin, api, judge, organizer, public, teams, voting
 from app.security import Forbidden, NotAuthenticated
 from app.services import audit
 from app.web import render
@@ -24,7 +24,7 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 
 # organizer first: its /events/new must win over public's /events/{slug}.
-for module in (organizer, account, admin, teams, judge, public, api):
+for module in (organizer, account, admin, teams, judge, voting, public, api):
     app.include_router(module.router)
 
 

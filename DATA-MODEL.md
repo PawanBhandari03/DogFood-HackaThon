@@ -99,6 +99,12 @@ The criteria are **normalized into rows rather than stored as a JSON blob**, whi
 
 Raw weighted and normalized scores are **not stored**. They are recomputed from `score_values`, the current weights and the current `shrinkage_k` (`services/scoring.py`). With hundreds of sheets this takes milliseconds, and it means a stored number can never disagree with its inputs.
 
+### `votes`
+Community approval voting (T3). `(user_id, project_id)` is unique: a voter can vote for a project at most once. Voters are limited to `event.max_votes` votes in total. `event_id` is indexed for tally aggregation and exports. IP address is captured for organizer abuse signals.
+
+### `comments`
+Public comments on submitted projects. `(project_id, user_id, body, created_at, hidden_at, hidden_by_id)`. Moderation is soft-delete: organizers can hide comments, setting `hidden_at` and `hidden_by_id`. Hidden comments disappear from public view but remain in the database with an audit trail.
+
 ### `audit_log`
 Append-only: nothing in the application updates or deletes it. `action` (e.g. `score.updated`, `denied.peer_scores`), `actor_id`, `event_id`, `entity_type` / `entity_id`, a JSONB `detail` with before/after values where relevant, and the client IP. Indexed on `at` and `event_id`, because the organizer view reads it newest-first per event.
 

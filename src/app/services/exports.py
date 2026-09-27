@@ -18,6 +18,7 @@ from app.models import (
     TeamMember,
     Track,
     User,
+    Vote,
 )
 from app.services.scoring import event_results, load_sheets, normalize
 
@@ -125,3 +126,23 @@ def event_json(db: Session, event: Event) -> dict:
                     "comment": a.score.comment}
                    for a in assignments if a.score],
     }
+
+
+def votes_csv(db: Session, event: Event) -> str:
+    votes = db.scalars(
+        select(Vote).where(Vote.event_id == event.id)
+        .options(selectinload(Vote.user), selectinload(Vote.project))
+        .order_by(Vote.created_at.asc())
+    ).all()
+    rows = [
+        [
+            v.user.handle,
+            v.project.external_id or v.project.id,
+            v.project.title,
+            v.created_at.isoformat() if v.created_at else "",
+            v.ip or "",
+        ]
+        for v in votes
+    ]
+    return _csv(["voter_id", "project_id", "project_title", "time", "ip"], rows)
+

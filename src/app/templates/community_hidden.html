@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Community results hidden · {{ event.name }}{% endblock %}
+{% block content %}
+<div class="kicker"><a href="/events/{{ event.slug }}">{{ event.name }}</a></div>
+<h1>Community results are not visible yet</h1>
+<p class="deck">Community voting results are sealed while voting is active. Results will be published after voting closes{% if event.voting_close_at %} on {{ event.voting_close_at | dt }}{% endif %}.</p>
+{% endblock %}

@@ -59,6 +59,10 @@ def _practice_event(db, organizer: User) -> Event:
         tagline="An open event to try the whole flow: team, submit, judge, publish.",
         description="Seeded in demo mode. Submissions are open for 30 days from first boot.",
         starts_at=now - timedelta(days=1), submissions_close_at=now + timedelta(days=30),
+        voting_mode="authenticated",
+        voting_open_at=now,
+        voting_close_at=now + timedelta(days=30),
+        max_votes=3,
         created_by_id=organizer.id,
     )
     db.add(event)

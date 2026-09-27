@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Community Results · {{ event.name }}{% endblock %}
+{% block content %}
+<div class="kicker"><a href="/events/{{ event.slug }}">{{ event.name }}</a> · community voting</div>
+<h1>Community Choice Standings</h1>
+{% if preview %}<div class="flash">Preview: only organizers can see this until voting closes.</div>{% endif %}
+<p class="deck">Total votes cast: {{ total_votes }}. Ranked by approval vote count.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>#</th><th>Project</th><th>Team</th><th>Track</th><th class="num">Votes</th></tr></thead>
+  <tbody>
+  {% for p, count in tallies %}
+    <tr>
+      <td class="rank">{{ loop.index }}</td>
+      <td><a href="/projects/{{ p.external_id or p.id }}">{{ p.title }}</a></td>
+      <td>{{ p.team.name }}</td>
+      <td>{{ p.track.name if p.track else "" }}</td>
+      <td class="num"><strong>{{ count }}</strong></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

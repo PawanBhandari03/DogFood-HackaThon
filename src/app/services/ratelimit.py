@@ -34,3 +34,4 @@ class RateLimiter:
 
 login_limiter = RateLimiter(limit=10, window_seconds=60)
 vote_limiter = RateLimiter(limit=30, window_seconds=60)
+comment_limiter = RateLimiter(limit=5, window_seconds=60)

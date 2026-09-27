@@ -289,3 +289,16 @@ How it is enforced:
 ## 7. Audit trail
 
 Every state change writes an append-only row to `audit_log` with who, when, what, a before/after detail and the client IP. That covers events, rubric weights, invitations, assignment runs (with seed), scores filed and changed, duplicate decisions, results published or unpublished, and logins. Refused access attempts that matter for integrity are logged too (`denied.*`). Organizers read it on *Organizer desk → Audit log*, filterable by action. Nothing in the application updates or deletes audit rows.
+
+---
+
+## 8. Community voting and abuse (T3)
+
+Community voting runs alongside or after official rubric judging as an approval vote ("pick up to N projects"):
+
+- **Window enforcement:** Voting is enabled only when `voting_mode == "authenticated"` and within `[voting_open_at, voting_close_at]`. Results stay sealed with a 403 to non-organizers until the close timestamp.
+- **Conflict of interest:** Organizers and judges of an event cannot vote. Participants cannot vote for projects from their own team.
+- **Ballot position bias:** Each voter receives an independently shuffled ballot order generated with `random.Random(f"{event.id}:{user.id}")`, which is deterministic across reloads.
+- **Anti-abuse & Rate Limiting:** A sliding-window rate limiter restricts actions to 30/minute/user. The database `UNIQUE (user_id, project_id)` constraint prevents double voting.
+- **Organizers abuse dashboard:** Live signals highlight votes from accounts created after voting opened, IP addresses shared by 3+ voters, and accounts casting multiple votes within 10 seconds. Organizers can void specific votes with an audit trail.
+

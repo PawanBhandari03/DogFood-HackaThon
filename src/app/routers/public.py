@@ -1,14 +1,17 @@
 """Pages anyone can see without logging in."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth import Viewer, get_viewer, team_membership
+from app.auth import Viewer, get_viewer, require_organizer, require_user, team_membership
 from app.db import get_db
-from app.models import Event, Project, ProjectStatus, Team, TeamMember, Track
+from app.models import Comment, Event, Project, ProjectStatus, Team, TeamMember, Track, utcnow
+from app.security import Forbidden
+from app.services import audit
+from app.services.ratelimit import comment_limiter
 from app.services.scoring import event_results
-from app.web import event_or_404, render
+from app.web import event_or_404, redirect, render
 
 router = APIRouter()
 
@@ -63,7 +66,69 @@ def project_page(ref: str, request: Request, viewer: Viewer = Depends(get_viewer
     own = member is not None and member.team_id == project.team_id
     if project.status != ProjectStatus.SUBMITTED and not (own or viewer.is_organizer(project.event)):
         raise HTTPException(404, "No such project.")
-    return render(request, "project.html", project=project, own=own)
+
+    is_org = viewer.is_organizer(project.event)
+    q = select(Comment).where(Comment.project_id == project.id).options(selectinload(Comment.user), selectinload(Comment.hidden_by))
+    if not is_org:
+        q = q.where(Comment.hidden_at.is_(None))
+    comments = db.scalars(q.order_by(Comment.created_at.asc())).all()
+
+    return render(request, "project.html", project=project, own=own, comments=comments, is_org=is_org)
+
+
+@router.post("/projects/{ref}/comments")
+def post_comment(ref: str, request: Request, body: str = Form(...),
+                 viewer: Viewer = Depends(require_user), db: Session = Depends(get_db)):
+    project = db.scalar(select(Project).where(
+        (Project.external_id == ref) | (Project.id == (int(ref) if ref.isdigit() else -1)))
+        .options(selectinload(Project.event)))
+    if project is None or project.status != ProjectStatus.SUBMITTED:
+        raise HTTPException(404, "Project not found or not submitted.")
+
+    cleaned_body = body.strip()
+    if not (1 <= len(cleaned_body) <= 2000):
+        raise HTTPException(422, "Comment must be between 1 and 2000 characters.")
+
+    if not comment_limiter.allow(f"{viewer.user.id}"):
+        raise Forbidden("rate_limited", "Too many comments. Please wait a minute.",
+                        event_id=project.event_id, actor_id=viewer.user.id)
+
+    comment = Comment(
+        project_id=project.id,
+        user_id=viewer.user.id,
+        body=cleaned_body,
+    )
+    db.add(comment)
+    db.flush()
+    audit.record(db, "comment.posted", actor=viewer.user, event_id=project.event_id,
+                 entity_type="comment", entity_id=comment.id,
+                 detail={"project_id": project.id, "project_title": project.title, "length": len(cleaned_body)},
+                 request=request)
+    db.commit()
+    target_ref = project.external_id or project.id
+    return redirect(f"/projects/{target_ref}", "Comment posted.")
+
+
+@router.post("/comments/{id}/hide")
+def hide_comment(id: int, request: Request, viewer: Viewer = Depends(require_user),
+                 db: Session = Depends(get_db)):
+    comment = db.get(Comment, id)
+    if comment is None:
+        raise HTTPException(404, "No such comment.")
+    project = db.get(Project, comment.project_id)
+    if project is None:
+        raise HTTPException(404, "No such project.")
+    require_organizer(viewer, project.event)
+
+    comment.hidden_at = utcnow()
+    comment.hidden_by_id = viewer.user.id
+    audit.record(db, "comment.hidden", actor=viewer.user, event_id=project.event_id,
+                 entity_type="comment", entity_id=comment.id,
+                 detail={"comment_id": comment.id, "project_id": project.id},
+                 request=request)
+    db.commit()
+    target_ref = project.external_id or project.id
+    return redirect(f"/projects/{target_ref}", "Comment hidden.")
 
 
 @router.get("/events/{slug}")
@@ -77,12 +142,15 @@ def event_page(slug: str, request: Request, viewer: Viewer = Depends(get_viewer)
     return render(request, "event.html", event=event, submitted=submitted, teams=teams, member=member)
 
 
+from app.services.voting import voting_open
+
+
 @router.get("/events/{slug}/results")
 def results_page(slug: str, request: Request, viewer: Viewer = Depends(get_viewer),
                  db: Session = Depends(get_db)):
     event = event_or_404(db, slug)
     preview = False
-    if not event.results_published_at:
+    if not event.results_published_at or voting_open(event):
         if not viewer.is_organizer(event):
             return render(request, "results_hidden.html", status_code=403, event=event)
         preview = True

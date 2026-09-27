@@ -12,6 +12,48 @@
     {% else %}
       <p class="muted">The team has not written a longer description.</p>
     {% endif %}
+
+    <div class="section-head" style="margin-top:2.5rem"><h2>Comments ({{ comments | length }})</h2></div>
+    {% if comments %}
+      <div class="comments-list" style="margin-bottom:2rem">
+        {% for c in comments %}
+          <div class="panel" style="margin-bottom:1rem; padding:12px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+              <strong>{{ c.user.name }}</strong>
+              <span class="small muted">{{ c.created_at | dt }}</span>
+            </div>
+            {% if c.hidden_at %}
+              <p class="muted italic" style="margin:0 0 6px 0;">[Hidden by organizer{% if c.hidden_by %} {{ c.hidden_by.name }}{% endif %}]</p>
+            {% endif %}
+            <p style="margin:0; white-space:pre-wrap;">{{ c.body }}</p>
+            {% if is_org and not c.hidden_at %}
+              <div style="text-align:right; margin-top:6px;">
+                <form method="post" action="/comments/{{ c.id }}/hide" class="inline">
+                  <button class="linkbutton small down" type="submit">Hide comment</button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No comments yet. Be the first to leave feedback!</p>
+    {% endif %}
+
+    {% if project.status == "submitted" %}
+      <div class="panel" style="margin-top:1.5rem">
+        <h3>Leave a comment</h3>
+        {% if viewer and viewer.is_authenticated %}
+          <form method="post" action="/projects/{{ project.external_id or project.id }}/comments">
+            <label for="comment-body">Comment</label>
+            <textarea id="comment-body" name="body" required maxlength="2000" rows="3" placeholder="Share your feedback or questions..."></textarea>
+            <div class="actions"><button class="btn small" type="submit">Post comment</button></div>
+          </form>
+        {% else %}
+          <p class="small muted"><a href="/login?next=/projects/{{ project.external_id or project.id }}">Log in</a> to post a comment.</p>
+        {% endif %}
+      </div>
+    {% endif %}
   </article>
   <aside class="sidebar">
     <div>{{ stamp(project.status) }}{% if own and project.status != "submitted" %} <span class="small muted">only your team sees this</span>{% endif %}</div>

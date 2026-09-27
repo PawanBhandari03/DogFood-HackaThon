@@ -73,6 +73,11 @@
         {% else %}<p>Judging is under way. Results appear here when the organizers publish them.</p>{% endif %}
       {% endif %}
     </div>
+    {% if event.voting_mode == "authenticated" and event.voting_open_at and event.voting_close_at and event.voting_open_at <= now < event.voting_close_at %}
+      <a class="btn" href="/events/{{ event.slug }}/vote">Vote on projects</a>
+    {% elif event.voting_mode == "authenticated" and event.voting_close_at and now >= event.voting_close_at %}
+      <a class="btn ghost" href="/events/{{ event.slug }}/community">Community results</a>
+    {% endif %}
     <a class="btn ghost" href="/projects?event={{ event.slug }}">Browse the projects</a>
     {% if viewer and viewer.is_organizer(event) %}<a class="btn" href="/events/{{ event.slug }}/manage">Organizer desk</a>{% endif %}
   </aside>

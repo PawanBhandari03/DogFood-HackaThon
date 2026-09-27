@@ -145,10 +145,13 @@ def create_project(slug: str, payload: ProjectIn, request: Request,
 
 # --- organizer data -----------------------------------------------------------
 
+from app.services.voting import voting_open
+
+
 @router.get("/events/{slug}/results")
 def results(slug: str, viewer: Viewer = Depends(get_viewer), db: Session = Depends(get_db)):
     event = event_or_404(db, slug)
-    if not event.results_published_at:
+    if not event.results_published_at or voting_open(event):
         if not viewer.is_authenticated:
             raise Forbidden("results_hidden", "Results are not published yet.")
         require_organizer(viewer, event)
@@ -193,6 +196,12 @@ def export_scores(slug: str, viewer: Viewer = Depends(require_user), db: Session
 def export_projects(slug: str, viewer: Viewer = Depends(require_user), db: Session = Depends(get_db)):
     event = _organizer_event(slug, viewer, db)
     return _csv_response(exports.projects_csv(db, event), f"{event.slug}-projects.csv")
+
+
+@router.get("/events/{slug}/export/votes.csv")
+def export_votes(slug: str, viewer: Viewer = Depends(require_user), db: Session = Depends(get_db)):
+    event = _organizer_event(slug, viewer, db)
+    return _csv_response(exports.votes_csv(db, event), f"{event.slug}-votes.csv")
 
 
 @router.get("/events/{slug}/export.json")

@@ -34,7 +34,7 @@ from app.models import (  # noqa: E402
     utcnow,
 )
 from app.security import create_session, hash_password, new_token  # noqa: E402
-from app.services.ratelimit import login_limiter  # noqa: E402
+from app.services.ratelimit import comment_limiter, login_limiter, vote_limiter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -63,6 +63,8 @@ def clean(migrated):
     with engine.begin() as conn:
         conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
     login_limiter.reset()
+    vote_limiter.reset()
+    comment_limiter.reset()
     yield
 
 

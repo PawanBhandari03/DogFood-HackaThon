@@ -13,6 +13,7 @@ from app.models import (
     Assignment,
     AssignmentStatus,
     AuditEntry,
+    Comment,
     Event,
     EventRole,
     JudgeInvite,
@@ -27,6 +28,7 @@ from app.models import (
     TeamMember,
     Track,
     User,
+    Vote,
     utcnow,
 )
 from app.security import Forbidden, new_token
@@ -34,6 +36,7 @@ from app.services import assignment as assign_svc
 from app.services import audit
 from app.services.progress import event_progress
 from app.services.scoring import event_results
+from app.services.voting import abuse_signals, tallies, voting_open
 from app.util import parse_local_datetime, slugify
 from app.web import event_or_404, redirect, render
 
@@ -164,27 +167,42 @@ def save_settings(slug: str, request: Request, name: str = Form(...), tagline: s
                   description: str = Form(""), starts_at: str = Form(...),
                   submissions_close_at: str = Form(...), judging_close_at: str = Form(""),
                   max_team_size: int = Form(4), reviews_per_project: int = Form(3),
-                  shrinkage_k: float = Form(3.0), viewer: Viewer = Depends(require_user),
+                  shrinkage_k: float = Form(3.0), voting_mode: str = Form("off"),
+                  voting_open_at: str = Form(""), voting_close_at: str = Form(""),
+                  max_votes: int = Form(3), viewer: Viewer = Depends(require_user),
                   db: Session = Depends(get_db)):
     event = _manage(db, viewer, slug)
     try:
         start, close = parse_local_datetime(starts_at), parse_local_datetime(submissions_close_at)
         judging = parse_local_datetime(judging_close_at) if judging_close_at else None
+        v_open = parse_local_datetime(voting_open_at) if voting_open_at else None
+        v_close = parse_local_datetime(voting_close_at) if voting_close_at else None
     except ValueError:
         raise HTTPException(422, "Dates must look like 2026-10-01T18:00.")
     if close <= start:
         raise HTTPException(422, "Submissions must close after the event starts.")
     if not (1 <= max_team_size <= 20 and 1 <= reviews_per_project <= 20 and 0 <= shrinkage_k <= 50):
         raise HTTPException(422, "Team size and reviews must be 1-20; k must be 0-50.")
+    if voting_mode not in ("off", "authenticated"):
+        raise HTTPException(422, "Voting mode must be off or authenticated.")
+    if not (1 <= max_votes <= 20):
+        raise HTTPException(422, "Max votes must be 1-20.")
+    if voting_mode == "authenticated" and v_open and v_close and v_close <= v_open:
+        raise HTTPException(422, "Voting must close after it opens.")
+
     before = {"starts_at": event.starts_at.isoformat(), "close": event.submissions_close_at.isoformat(),
               "k": event.shrinkage_k}
     event.name, event.tagline, event.description = name.strip()[:200], tagline.strip()[:300], description
     event.starts_at, event.submissions_close_at, event.judging_close_at = start, close, judging
     event.max_team_size, event.reviews_per_project, event.shrinkage_k = \
         max_team_size, reviews_per_project, shrinkage_k
+    event.voting_mode = voting_mode
+    event.voting_open_at = v_open
+    event.voting_close_at = v_close
+    event.max_votes = max_votes
     _log(db, viewer, event, "event.updated", request, entity_type="event", entity_id=event.slug,
          detail={"before": before, "after": {"starts_at": start.isoformat(), "close": close.isoformat(),
-                                             "k": shrinkage_k}})
+                                              "k": shrinkage_k, "voting_mode": voting_mode}})
     db.commit()
     return redirect(_url(event, "settings"), "Settings saved.")
 
@@ -452,6 +470,9 @@ def results_page(slug: str, request: Request, viewer: Viewer = Depends(require_u
     return render(request, "manage/results.html", event=event, tab="results", res=res, judge_names=judge_names)
 
 
+from app.services.voting import voting_open
+
+
 @router.post("/events/{slug}/manage/results/publish")
 def publish(slug: str, request: Request, action: str = Form(...), viewer: Viewer = Depends(require_user),
             db: Session = Depends(get_db)):
@@ -459,6 +480,8 @@ def publish(slug: str, request: Request, action: str = Form(...), viewer: Viewer
     if action == "publish":
         if event.submissions_open():
             raise HTTPException(409, "Submissions are still open. Publish after the deadline.")
+        if voting_open(event):
+            raise HTTPException(409, "Voting is still open. Publish after voting closes.")
         event.results_published_at = utcnow()
     elif action == "unpublish":
         event.results_published_at = None
@@ -467,6 +490,37 @@ def publish(slug: str, request: Request, action: str = Form(...), viewer: Viewer
     _log(db, viewer, event, f"results.{action}ed", request, entity_type="event", entity_id=event.slug)
     db.commit()
     return redirect(_url(event, "results"), "Results published." if action == "publish" else "Results hidden.")
+
+
+# --- voting --------------------------------------------------------------------------------
+
+@router.get("/events/{slug}/manage/voting")
+def manage_voting_page(slug: str, request: Request, viewer: Viewer = Depends(require_user),
+                       db: Session = Depends(get_db)):
+    event = _manage(db, viewer, slug)
+    tally_list = tallies(db, event)
+    signals = abuse_signals(db, event)
+    votes = db.scalars(select(Vote).where(Vote.event_id == event.id)
+                       .options(selectinload(Vote.user), selectinload(Vote.project))
+                       .order_by(Vote.created_at.desc())).all()
+    return render(request, "manage/voting.html", event=event, tab="voting",
+                  tallies=tally_list, signals=signals, votes=votes)
+
+
+@router.post("/events/{slug}/manage/votes/{vote_id}/void")
+def void_vote(slug: str, vote_id: int, request: Request, reason: str = Form("organizer voided"),
+              viewer: Viewer = Depends(require_user), db: Session = Depends(get_db)):
+    event = _manage(db, viewer, slug)
+    vote = db.get(Vote, vote_id)
+    if vote is None or vote.event_id != event.id:
+        raise HTTPException(404, "No such vote.")
+    voter_id = vote.user_id
+    project_id = vote.project_id
+    db.delete(vote)
+    _log(db, viewer, event, "vote.voided", request, entity_type="vote", entity_id=vote_id,
+         detail={"voter_id": voter_id, "project_id": project_id, "reason": reason})
+    db.commit()
+    return redirect(_url(event, "voting"), f"Vote #{vote_id} voided.")
 
 
 # --- audit log ----------------------------------------------------------------------------

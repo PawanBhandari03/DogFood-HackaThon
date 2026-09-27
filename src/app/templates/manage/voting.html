@@ -1,0 +1,112 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+<div class="desk-head">
+  <div>
+    <h2 style="margin:0">Community voting</h2>
+    <p class="muted" style="margin:4px 0 0">
+      Mode: <strong>{{ event.voting_mode }}</strong> · 
+      {% if event.voting_open_at %}Opens: {{ event.voting_open_at | dt }}{% else %}Opens: —{% endif %} · 
+      {% if event.voting_close_at %}Closes: {{ event.voting_close_at | dt }}{% else %}Closes: —{% endif %} · 
+      Max votes: {{ event.max_votes }}
+    </p>
+  </div>
+  <div class="actions" style="margin:0">
+    <a class="btn ghost small" href="/api/events/{{ event.slug }}/export/votes.csv">Export votes CSV</a>
+    <a class="btn ghost small" href="/events/{{ event.slug }}/community">Public community page</a>
+  </div>
+</div>
+
+<div class="section-head" style="margin-top:20px"><h2>Live tallies</h2></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>#</th><th>Project</th><th>Team</th><th>Track</th><th class="num">Votes</th></tr></thead>
+  <tbody>
+  {% for p, count in tallies %}
+    <tr>
+      <td class="rank">{{ loop.index }}</td>
+      <td><a href="/projects/{{ p.external_id or p.id }}">{{ p.title }}</a></td>
+      <td>{{ p.team.name }}</td>
+      <td>{{ p.track.name if p.track else "" }}</td>
+      <td class="num"><strong>{{ count }}</strong></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">No votes cast yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+
+<div class="section-head" style="margin-top:2rem"><h2>Abuse signals</h2></div>
+<div class="columns">
+  <div class="panel">
+    <h3>New accounts voting</h3>
+    <p class="small muted">Accounts created after voting opened.</p>
+    {% if signals.new_accounts %}
+      <ul>
+        {% for s in signals.new_accounts %}
+          <li>
+            <strong>{{ s.user.name }}</strong> ({{ s.user.email }}) voted for <em>{{ s.project.title }}</em>
+            <div class="small muted">Account created: {{ s.user_created_at | dt }} · Voted: {{ s.voted_at | dt }} {% if s.ip %}· IP: {{ s.ip }}{% endif %}</div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="small muted">None detected.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h3>Shared IP addresses</h3>
+    <p class="small muted">IPs used by 3 or more distinct voters.</p>
+    {% if signals.shared_ips %}
+      <ul>
+        {% for s in signals.shared_ips %}
+          <li>
+            <code>{{ s.ip }}</code>: <strong>{{ s.user_count }}</strong> voters ({{ s.vote_count }} total votes)
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="small muted">None detected.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h3>Rapid voters</h3>
+    <p class="small muted">Voters who cast all votes within 10 seconds.</p>
+    {% if signals.fast_voters %}
+      <ul>
+        {% for s in signals.fast_voters %}
+          <li>
+            <strong>{{ s.user.name if s.user else s.user_id }}</strong>: {{ s.vote_count }} votes in {{ s.duration_seconds }}s
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="small muted">None detected.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-head" style="margin-top:2rem"><h2>All votes</h2></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>ID</th><th>Voter</th><th>Project</th><th>Time</th><th>IP</th><th>Action</th></tr></thead>
+  <tbody>
+  {% for v in votes %}
+    <tr>
+      <td>#{{ v.id }}</td>
+      <td>{{ v.user.name }} <span class="muted small">({{ v.user.email }})</span></td>
+      <td><a href="/projects/{{ v.project.external_id or v.project.id }}">{{ v.project.title }}</a></td>
+      <td>{{ v.created_at | dt }}</td>
+      <td><code>{{ v.ip or "—" }}</code></td>
+      <td>
+        <form method="post" action="/events/{{ event.slug }}/manage/votes/{{ v.id }}/void" class="inline" onsubmit="return confirm('Void this vote?');">
+          <input type="hidden" name="reason" value="Organizer voided">
+          <button class="linkbutton small down" type="submit">Void</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">No votes recorded.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

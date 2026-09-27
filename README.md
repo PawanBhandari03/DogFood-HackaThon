@@ -80,7 +80,16 @@ The committed [acceptance-report.txt](acceptance-report.txt) is the checker's ou
 - Cross-judge normalization: per-judge z-scores with shrinkage, raw vs normalized side by side, per-project standard error. Method and proof in [JUDGING.md](JUDGING.md).
 - CSV exports of results, score sheets and projects, plus a re-importable JSON export.
 
-**T3 and T4: not claimed.** Some T4 pieces exist: a documented JSON API with OpenAPI at `/api/docs`, and bulk JSON import/export through `python -m app.cli`. Neither tier is complete, so neither is claimed.
+**T3, community voting & comments: built & tested**
+- Authenticated approval voting with configurable `max_votes` and strict window enforcement.
+- Deterministic per-voter randomized ballot order (`random.Random(f"{event.id}:{user.id}")`) to eliminate position bias.
+- Sealed tallies: live counts return 403 until the voting window closes (organizers can preview).
+- Public project comments with 1–2000 character validation, rate limiting, and organizer soft-delete moderation.
+- Comprehensive anti-abuse protections: rate limits (30 votes/min, 5 comments/min), duplicate detection via DB constraints, and organizer abuse signals (new accounts, shared IPs, rapid voters).
+- Full threat analysis documented in [THREAT-MODEL.md](THREAT-MODEL.md).
+- *Note:* Claimed tiers in `.dogfood.toml` remain `["T1", "T2"]` because `run.py` only validates T1 and T2 checks.
+
+**T4: not claimed.** Some T4 pieces exist: a documented JSON API with OpenAPI at `/api/docs`, and bulk JSON import/export through `python -m app.cli`.
 
 ## Known gaps, honestly
 
@@ -88,13 +97,14 @@ The committed [acceptance-report.txt](acceptance-report.txt) is the checker's ou
 - **No file uploads.** Projects link to their repository and demo; there are no image galleries.
 - **The fixture event has no start date.** We use submissions_close − 72 hours, which is before every fixture submission.
 - **Normalization cannot fully separate a judge's leniency from the quality of the batch they drew.** JUDGING.md explains the limitation and what would fix it.
-- **The login rate limiter is in memory.** That is correct for the single app container we ship, but would need Postgres or Redis behind several replicas.
+- **The login and voting rate limiters are in memory.** That is correct for the single app container we ship, but would need Postgres or Redis behind several replicas.
 
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): system design and the decisions behind it.
 - [DATA-MODEL.md](DATA-MODEL.md): every table, its constraints, and the import and export paths.
 - [JUDGING.md](JUDGING.md): assignment, scoring, normalization with a worked proof on the fixture data, and isolation.
+- [THREAT-MODEL.md](THREAT-MODEL.md): analysis of Sybil attacks, ballot stuffing, collusion, scraping, and deadline gaming.
 
 ## Operating it for real
 
