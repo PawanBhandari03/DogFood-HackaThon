@@ -30,6 +30,7 @@ def test_registering_webhook_requires_organizer(client, make, db):
     )
     assert r_org.status_code == 303
 
+    db.expire_all()
     hook = db.scalar(select(Webhook).where(Webhook.event_id == event.id))
     assert hook is not None
     assert hook.url == "https://example.com/hook"
@@ -81,6 +82,7 @@ def test_project_submission_fires_webhook_with_valid_signature(client, make, db)
         assert req.headers.get("X-broadsheet-signature") == expected_sig
 
         # Delivery log written
+        db.expire_all()
         delivery = db.scalar(select(WebhookDelivery).where(WebhookDelivery.webhook_id == hook.id))
         assert delivery is not None
         assert delivery.succeeded is True
@@ -111,6 +113,7 @@ def test_failing_webhook_does_not_break_user_action(client, make, db):
         # Main action succeeds despite webhook failure
         assert r.status_code == 201
 
+        db.expire_all()
         delivery = db.scalar(select(WebhookDelivery).where(WebhookDelivery.webhook_id == hook.id))
         assert delivery is not None
         assert delivery.succeeded is False
@@ -154,10 +157,16 @@ def test_score_submitted_webhook_does_not_leak_score_values_or_comment(client, m
     mock_resp.__enter__.return_value = mock_resp
 
     with patch("urllib.request.urlopen", return_value=mock_resp) as mock_urlopen:
-        crit = event.criteria[0]
+        # Refresh to get actual Postgres-assigned criterion IDs (same ones the handler sees)
+        db.refresh(event, ["criteria"])
+        # Build score data for ALL criteria using the key prefix the router reads ("c{id}")
+        score_data = {f"c{c.id}": "5" for c in event.criteria}
+        assert score_data, "Event must have criteria for this test to be meaningful"
+        score_data["comment"] = "Super top secret private judge thoughts"
+        score_data["then"] = "stay"
         r = c.post(
             f"/judge/assignments/{assignment.id}",
-            data={f"c{crit.id}": "5", "comment": "Super top secret private judge thoughts", "then": "stay"},
+            data=score_data,
             follow_redirects=False,
         )
         assert r.status_code == 303
@@ -187,11 +196,13 @@ def test_deleting_webhook_stops_deliveries(client, make, db):
     db.add(hook)
     db.commit()
 
+    hook_id = hook.id
     c_org = as_user(client, make, org)
-    r = c_org.post(f"/events/{event.slug}/manage/webhooks/{hook.id}/delete", follow_redirects=False)
+    r = c_org.post(f"/events/{event.slug}/manage/webhooks/{hook_id}/delete", follow_redirects=False)
     assert r.status_code == 303
-    db.expire_all()
-    assert db.scalar(select(Webhook).where(Webhook.id == hook.id)) is None
+    # Expunge cached instance then re-query so we confirm the row is gone in Postgres
+    db.expunge(hook)
+    assert db.scalar(select(Webhook).where(Webhook.id == hook_id)) is None
 
     # Submission now should not call urlopen
     participant = make.user("dev_del@x.org")
