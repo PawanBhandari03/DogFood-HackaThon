@@ -65,6 +65,9 @@
       {% if project.demo_url %}<dt>Demo</dt><dd><a href="{{ project.demo_url }}" rel="noopener nofollow">{{ project.demo_url }}</a></dd>{% endif %}
     </dl>
     {% if own %}<a class="btn ghost" href="/events/{{ project.event.slug }}/team">Edit on your team page</a>{% endif %}
+    {% if project.status == "submitted" %}
+      <a class="btn ghost" href="/events/{{ project.event.slug }}/certificates/{{ project.team.external_id or project.team.id }}" target="_blank">🎓 Download certificate</a>
+    {% endif %}
   </aside>
 </div>
 {% endblock %}

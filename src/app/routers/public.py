@@ -15,6 +15,62 @@ from app.web import event_or_404, redirect, render
 
 router = APIRouter()
 
+
+@router.get("/events/{slug}/certificates/{ref}", include_in_schema=False)
+def certificate(slug: str, ref: str, request: Request, db: Session = Depends(get_db)):
+    """Public printable certificate for a submitted project.
+
+    ``ref`` is a team's external_id or numeric id.  No login required so
+    certificates can be shared publicly.  Rank is shown only after
+    results_published_at is set on the event.
+    """
+    event = event_or_404(db, slug)
+
+    # Resolve team by external_id or numeric id
+    team = db.scalar(
+        select(Team)
+        .where(
+            Team.event_id == event.id,
+            (Team.external_id == ref) | (Team.id == (int(ref) if ref.isdigit() else -1)),
+        )
+        .options(
+            selectinload(Team.members).selectinload(TeamMember.user),
+        )
+    )
+    if team is None:
+        raise HTTPException(404, "No such team.")
+
+    project = db.scalar(
+        select(Project)
+        .where(Project.team_id == team.id, Project.event_id == event.id)
+        .options(selectinload(Project.team).selectinload(Team.members).selectinload(TeamMember.user))
+    )
+
+    # Only show anything useful if the project is submitted
+    available = project is not None and project.status == ProjectStatus.SUBMITTED
+    results_published = event.results_published_at is not None
+
+    rank = None
+    if available and results_published:
+        res = event_results(db, event)
+        for row in res.rows:
+            if row.project_id == project.id:
+                rank = row.rank
+                break
+
+    return render(
+        request,
+        "certificate.html",
+        event=event,
+        project=project,
+        ref=ref,
+        available=available,
+        results_published=results_published,
+        rank=rank,
+        # certificate.html is standalone — suppress the base layout nav
+        _standalone=True,
+    )
+
 PAGE_SIZE = 60
 
 

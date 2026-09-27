@@ -63,6 +63,10 @@
     {% elif project %}
       <h3>{{ project.title }}</h3><p>{{ project.summary }}</p>
       <a href="/projects/{{ project.external_id or project.id }}">View project page</a>
+      {% if project.status == "submitted" %}
+        &nbsp;&middot;&nbsp;
+        <a href="/events/{{ event.slug }}/certificates/{{ team.external_id or team.id }}" target="_blank">🎓 Certificate</a>
+      {% endif %}
     {% else %}<p class="muted">Your team did not submit a project.</p>{% endif %}
   </section>
 
