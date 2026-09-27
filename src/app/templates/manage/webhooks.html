@@ -1,0 +1,108 @@
+{% extends "manage/_layout.html" %}
+{% block desk %}
+<div class="desk-head">
+  <div>
+    <h2 style="margin:0">Event Webhooks</h2>
+    <p class="muted" style="margin:4px 0 0">
+      Dispatch HTTP POST events with HMAC-SHA256 signatures when projects are submitted, scores are filed, or results are published.
+    </p>
+  </div>
+</div>
+
+<div class="split" style="margin-top:20px;">
+  <div>
+    <div class="section-head"><h2>Configured Webhooks</h2></div>
+    {% if webhooks %}
+      <div class="table-wrap"><table>
+        <thead><tr><th>URL</th><th>Subscribed Events</th><th>Created</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for w in webhooks %}
+          <tr>
+            <td>
+              <code>{{ w.url }}</code>
+              {% if not w.is_active %}<span class="stamp withdrawn">inactive</span>{% endif %}
+            </td>
+            <td>
+              {% for e in w.subscribed_events %}
+                <span class="stamp draft" style="font-size:0.75rem; margin-right:4px;">{{ e }}</span>
+              {% endfor %}
+            </td>
+            <td class="small muted">{{ w.created_at | dt }}</td>
+            <td>
+              <form method="post" action="/events/{{ event.slug }}/manage/webhooks/{{ w.id }}/delete" class="inline" onsubmit="return confirm('Delete this webhook?');">
+                <button class="linkbutton small down" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}
+      <p class="muted">No webhooks registered for this event yet.</p>
+    {% endif %}
+
+    <div class="section-head" style="margin-top:2rem"><h2>Recent Deliveries</h2></div>
+    {% if deliveries %}
+      <div class="table-wrap"><table>
+        <thead><tr><th>Time</th><th>Event</th><th>Webhook URL</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for d in deliveries %}
+          <tr>
+            <td class="small muted">{{ d.attempted_at | dt }}</td>
+            <td><code>{{ d.event_type }}</code></td>
+            <td class="small"><code>{{ d.webhook.url if d.webhook else "—" }}</code></td>
+            <td>
+              {% if d.succeeded %}
+                <span class="stamp submitted">{{ d.status_code or 200 }} OK</span>
+              {% else %}
+                <span class="stamp withdrawn" title="{{ d.error }}">{{ d.status_code or "Error" }}</span>
+                {% if d.error %}<span class="small muted">({{ d.error | truncate(30) }})</span>{% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}
+      <p class="muted">No delivery attempts recorded yet.</p>
+    {% endif %}
+  </div>
+
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>Add a Webhook</h3>
+      <form method="post" action="/events/{{ event.slug }}/manage/webhooks">
+        <label for="webhook-url">Payload URL</label>
+        <input id="webhook-url" name="url" type="url" placeholder="https://example.org/webhook" required maxlength="500">
+
+        <fieldset style="margin-top:1rem; border:none; padding:0;">
+          <legend style="font-weight:bold; margin-bottom:6px;">Trigger Events</legend>
+          <div style="margin-bottom:6px;">
+            <label style="display:inline; font-weight:normal;">
+              <input type="checkbox" name="events" value="project.submitted" checked>
+              <code>project.submitted</code>
+            </label>
+          </div>
+          <div style="margin-bottom:6px;">
+            <label style="display:inline; font-weight:normal;">
+              <input type="checkbox" name="events" value="score.submitted" checked>
+              <code>score.submitted</code>
+            </label>
+          </div>
+          <div style="margin-bottom:6px;">
+            <label style="display:inline; font-weight:normal;">
+              <input type="checkbox" name="events" value="results.published" checked>
+              <code>results.published</code>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="actions" style="margin-top:1.5rem">
+          <button class="btn" type="submit">Create webhook</button>
+        </div>
+      </form>
+      <p class="hint">A random secret will be generated to sign payloads using HMAC-SHA256.</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

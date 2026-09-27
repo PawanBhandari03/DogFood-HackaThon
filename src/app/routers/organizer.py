@@ -29,8 +29,11 @@ from app.models import (
     Track,
     User,
     Vote,
+    Webhook,
+    WebhookDelivery,
     utcnow,
 )
+import secrets
 from app.security import Forbidden, new_token
 from app.services import assignment as assign_svc
 from app.services import audit
@@ -526,6 +529,95 @@ def void_vote(slug: str, vote_id: int, request: Request, reason: str = Form("org
          detail={"voter_id": voter_id, "project_id": project_id, "reason": reason})
     db.commit()
     return redirect(_url(event, "voting"), f"Vote #{vote_id} voided.")
+
+
+# --- webhooks -----------------------------------------------------------------------------
+
+@router.get("/events/{slug}/manage/webhooks")
+def manage_webhooks_page(slug: str, request: Request, viewer: Viewer = Depends(require_user),
+                         db: Session = Depends(get_db)):
+    event = _manage(db, viewer, slug)
+    webhooks = db.scalars(
+        select(Webhook).where(Webhook.event_id == event.id).order_by(Webhook.created_at.desc())
+    ).all()
+    deliveries = db.scalars(
+        select(WebhookDelivery)
+        .join(Webhook, Webhook.id == WebhookDelivery.webhook_id)
+        .where(Webhook.event_id == event.id)
+        .options(selectinload(WebhookDelivery.webhook))
+        .order_by(WebhookDelivery.attempted_at.desc())
+        .limit(20)
+    ).all()
+    return render(
+        request,
+        "manage/webhooks.html",
+        event=event,
+        tab="webhooks",
+        webhooks=webhooks,
+        deliveries=deliveries,
+    )
+
+
+@router.post("/events/{slug}/manage/webhooks")
+async def create_webhook(slug: str, request: Request, viewer: Viewer = Depends(require_user),
+                         db: Session = Depends(get_db)):
+    event = _manage(db, viewer, slug)
+    form = await request.form()
+    url = str(form.get("url", "")).strip()
+    if not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(422, "Webhook URL must start with http:// or https://")
+
+    valid_events = {"project.submitted", "score.submitted", "results.published"}
+    subscribed = [e for e in form.getlist("events") if e in valid_events]
+    if not subscribed:
+        subscribed = list(valid_events)
+
+    secret = secrets.token_hex(32)
+    webhook = Webhook(
+        event_id=event.id,
+        url=url[:500],
+        secret=secret,
+        subscribed_events=subscribed,
+        is_active=True,
+        created_by_id=viewer.user.id,
+    )
+    db.add(webhook)
+    _log(
+        db,
+        viewer,
+        event,
+        "webhook.created",
+        request,
+        entity_type="webhook",
+        detail={"url": url, "events": subscribed},
+    )
+    db.commit()
+    return redirect(
+        _url(event, "webhooks"),
+        f"Webhook created! Secret: {secret} (Save it now; it will not be displayed again).",
+    )
+
+
+@router.post("/events/{slug}/manage/webhooks/{webhook_id}/delete")
+def delete_webhook(slug: str, webhook_id: int, request: Request,
+                   viewer: Viewer = Depends(require_user), db: Session = Depends(get_db)):
+    event = _manage(db, viewer, slug)
+    webhook = db.get(Webhook, webhook_id)
+    if webhook is None or webhook.event_id != event.id:
+        raise HTTPException(404, "No such webhook.")
+    db.delete(webhook)
+    _log(
+        db,
+        viewer,
+        event,
+        "webhook.deleted",
+        request,
+        entity_type="webhook",
+        entity_id=webhook_id,
+        detail={"url": webhook.url},
+    )
+    db.commit()
+    return redirect(_url(event, "webhooks"), "Webhook deleted.")
 
 
 # --- audit log ----------------------------------------------------------------------------

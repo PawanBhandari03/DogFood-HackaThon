@@ -11,7 +11,7 @@
 </div>
 <nav class="tabs" aria-label="Organizer sections">
   {% for key, label in [("overview", "Overview"), ("settings", "Event"), ("rubric", "Rubric"), ("judges", "Judges"),
-                        ("assignments", "Assignments"), ("results", "Results"), ("voting", "Voting"), ("audit", "Audit log")] %}
+                        ("assignments", "Assignments"), ("results", "Results"), ("voting", "Voting"), ("webhooks", "Webhooks"), ("audit", "Audit log")] %}
   <a href="/events/{{ event.slug }}/manage{{ '' if key == 'overview' else '/' ~ key }}" {% if tab == key %}aria-current="page"{% endif %}>{{ label }}</a>
   {% endfor %}
 </nav>
