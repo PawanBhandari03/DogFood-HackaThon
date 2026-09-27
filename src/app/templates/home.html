@@ -6,43 +6,73 @@
 {% if lead %}
 <section class="lead-story">
   <div>
-    <div class="kicker">Lead story</div>
+    <div class="kicker">Front Page Feature</div>
     <h1><a href="/events/{{ lead.slug }}" style="text-decoration:none">{{ lead.name }}</a></h1>
     <p class="deck">{{ lead.tagline or "A hackathon, run on software you host yourself." }}</p>
+    
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;">
+      <span class="pill pill-accent">{{ lead.tracks | length }} Tracks</span>
+      <span class="pill pill-green">{{ counts.get(lead.id, 0) }} Submitted Projects</span>
+      {% if lead.voting_mode == "authenticated" %}<span class="pill pill-amber">Community Ballot Open</span>{% endif %}
+    </div>
+
     <div class="actions">
-      <a class="btn" href="/events/{{ lead.slug }}">Read the event</a>
-      <a class="btn ghost" href="/projects?event={{ lead.slug }}">Browse its projects</a>
+      <a class="btn primary" href="/events/{{ lead.slug }}">Enter &amp; Read Event</a>
+      <a class="btn ghost" href="/projects?event={{ lead.slug }}">Browse Projects</a>
+      {% if lead.voting_mode == "authenticated" and lead.voting_open_at and lead.voting_close_at and lead.voting_open_at <= now < lead.voting_close_at %}
+        <a class="btn ghost" href="/events/{{ lead.slug }}/vote">Cast Your Vote</a>
+      {% endif %}
     </div>
   </div>
   <div>
-    {{ phase_stamp(lead) }}
-    <dl class="dl" style="margin-top:16px">
-      <dt>Opens</dt><dd>{{ lead.starts_at | dt }}</dd>
-      <dt>Closes</dt><dd>{{ lead.submissions_close_at | dt }}</dd>
-      <dt>Entries</dt><dd>{{ counts.get(lead.id, 0) }} submitted</dd>
+    <div class="hero-img-wrap">
+      <img src="/static/img/hero.jpg" alt="Broadsheet Hackathon Press Illustration" width="600" height="338">
+      <div class="hero-caption">
+        <span>The Daily Innovator · Printshop Edition</span>
+        <span>Vol. I · Dogfood 2026</span>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span class="mono" style="font-weight:700; color:var(--ink-2); font-size:.75rem;">EVENT TIMELINE</span>
+      {{ phase_stamp(lead) }}
+    </div>
+    <dl class="dl">
+      <dt>Submissions Open</dt><dd>{{ lead.starts_at | dt }}</dd>
+      <dt>Deadline</dt><dd><strong>{{ lead.submissions_close_at | dt }}</strong></dd>
+      <dt>Total Entries</dt><dd><span class="pill pill-blue">{{ counts.get(lead.id, 0) }} verified</span></dd>
     </dl>
   </div>
 </section>
 {% endif %}
 
-<div class="section-head"><h2>All events</h2>
+<div class="section-head">
+  <h2>All Hackathon Dispatches</h2>
   {% if viewer and viewer.user and (viewer.is_admin or viewer.user.can_create_events) %}
-  <a class="btn small" href="/events/new">New event</a>{% endif %}
+  <a class="btn small" href="/events/new">+ New Event</a>{% endif %}
 </div>
+
 {% if events %}
 <div class="columns">
   {% for e in events %}
   <article class="article">
-    <div class="kicker">{{ e.tracks | length }} tracks · {{ counts.get(e.id, 0) }} entries</div>
-    <h3><a href="/events/{{ e.slug }}">{{ e.name }}</a></h3>
-    <p>{{ e.tagline }}</p>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <span class="byline">closes {{ e.submissions_close_at | dt }}</span>{{ phase_stamp(e) }}
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span class="kicker">{{ e.tracks | length }} tracks · {{ counts.get(e.id, 0) }} entries</span>
+        {{ phase_stamp(e) }}
+      </div>
+      <h3><a href="/events/{{ e.slug }}">{{ e.name }}</a></h3>
+      <p>{{ e.tagline or "Collaborative building event with dedicated tracks and awards." }}</p>
+    </div>
+    
+    <div class="byline" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <span>Closes <strong>{{ e.submissions_close_at | dt }}</strong></span>
+      <a class="btn small ghost" href="/events/{{ e.slug }}">View Event →</a>
     </div>
   </article>
   {% endfor %}
 </div>
 {% else %}
-<p class="muted">No events yet.</p>
+<p class="muted">No events currently scheduled.</p>
 {% endif %}
 {% endblock %}

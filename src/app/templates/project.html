@@ -2,34 +2,43 @@
 {% from "_macros.html" import stamp with context %}
 {% block title %}{{ project.title }}{% endblock %}
 {% block content %}
-<div class="kicker"><a href="/events/{{ project.event.slug }}">{{ project.event.name }}</a> · {{ project.track.name if project.track else "No track" }}</div>
-<h1>{{ project.title }}</h1>
+<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+  <a href="/events/{{ project.event.slug }}" class="pill pill-blue">{{ project.event.name }}</a>
+  <span class="pill pill-accent">{{ project.track.name if project.track else "General Track" }}</span>
+</div>
+
+<h1 style="margin-bottom:8px;">{{ project.title }}</h1>
 <p class="deck">{{ project.summary }}</p>
+
 <div class="split">
   <article>
-    {% if project.description %}
-      {% for para in project.description.split("\n\n") %}<p>{{ para }}</p>{% endfor %}
-    {% else %}
-      <p class="muted">The team has not written a longer description.</p>
-    {% endif %}
+    <div class="panel" style="background:var(--paper-tint); line-height:1.75; font-size:1.05rem;">
+      {% if project.description %}
+        {% for para in project.description.split("\n\n") %}<p style="margin:0 0 16px 0;">{{ para }}</p>{% endfor %}
+      {% else %}
+        <p class="muted italic" style="margin:0;">The team has not submitted an extended overview.</p>
+      {% endif %}
+    </div>
 
-    <div class="section-head" style="margin-top:2.5rem"><h2>Comments ({{ comments | length }})</h2></div>
+    <div class="section-head" style="margin-top:2.5rem;">
+      <h2>Discussion &amp; Feedback ({{ comments | length }})</h2>
+    </div>
     {% if comments %}
-      <div class="comments-list" style="margin-bottom:2rem">
+      <div class="comments-list" style="margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
         {% for c in comments %}
-          <div class="panel" style="margin-bottom:1rem; padding:12px 16px;">
-            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
-              <strong>{{ c.user.name }}</strong>
-              <span class="small muted">{{ c.created_at | dt }}</span>
+          <div class="panel" style="margin:0; padding:16px 18px; border-left:4px solid var(--ink);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span class="user-badge">{{ c.user.name }}</span>
+              <span class="small muted mono">{{ c.created_at | dt }}</span>
             </div>
             {% if c.hidden_at %}
-              <p class="muted italic" style="margin:0 0 6px 0;">[Hidden by organizer{% if c.hidden_by %} {{ c.hidden_by.name }}{% endif %}]</p>
+              <div class="pill pill-accent" style="margin-bottom:8px;">[Hidden by organizer{% if c.hidden_by %} {{ c.hidden_by.name }}{% endif %}]</div>
             {% endif %}
-            <p style="margin:0; white-space:pre-wrap;">{{ c.body }}</p>
+            <p style="margin:0; white-space:pre-wrap; color:var(--ink);">{{ c.body }}</p>
             {% if is_org and not c.hidden_at %}
-              <div style="text-align:right; margin-top:6px;">
+              <div style="text-align:right; margin-top:8px;">
                 <form method="post" action="/comments/{{ c.id }}/hide" class="inline">
-                  <button class="linkbutton small down" type="submit">Hide comment</button>
+                  <button class="linkbutton small down" type="submit">Hide comment ✕</button>
                 </form>
               </div>
             {% endif %}
@@ -37,37 +46,57 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="muted">No comments yet. Be the first to leave feedback!</p>
+      <p class="muted" style="margin-bottom:24px;">No feedback comments yet. Be the first to start the conversation!</p>
     {% endif %}
 
     {% if project.status == "submitted" %}
-      <div class="panel" style="margin-top:1.5rem">
-        <h3>Leave a comment</h3>
+      <div class="panel" style="border-top:4px solid var(--blue);">
+        <h3 style="margin-bottom:6px;">Add Your Feedback</h3>
+        <p class="small muted" style="margin-bottom:14px;">Constructive questions and praise for the creators.</p>
         {% if viewer and viewer.is_authenticated %}
           <form method="post" action="/projects/{{ project.external_id or project.id }}/comments">
-            <label for="comment-body">Comment</label>
-            <textarea id="comment-body" name="body" required maxlength="2000" rows="3" placeholder="Share your feedback or questions..."></textarea>
-            <div class="actions"><button class="btn small" type="submit">Post comment</button></div>
+            <label for="comment-body">Comment Text</label>
+            <textarea id="comment-body" name="body" required maxlength="2000" rows="3" placeholder="Share your thoughts, impressions, or technical questions..."></textarea>
+            <div class="actions"><button class="btn primary small" type="submit">Post Comment →</button></div>
           </form>
         {% else %}
-          <p class="small muted"><a href="/login?next=/projects/{{ project.external_id or project.id }}">Log in</a> to post a comment.</p>
+          <p class="small muted"><a href="/login?next=/projects/{{ project.external_id or project.id }}">Log in</a> to join the conversation.</p>
         {% endif %}
       </div>
     {% endif %}
   </article>
+
   <aside class="sidebar">
-    <div>{{ stamp(project.status) }}{% if own and project.status != "submitted" %} <span class="small muted">only your team sees this</span>{% endif %}</div>
-    <dl class="dl">
-      <dt>Team</dt><dd>{{ project.team.name }}</dd>
-      <dt>Members</dt><dd>{{ project.team.members | length }}</dd>
-      {% if project.submitted_at %}<dt>Filed</dt><dd>{{ project.submitted_at | dt }}</dd>{% endif %}
-      {% if project.repo_url %}<dt>Code</dt><dd><a href="{{ project.repo_url }}" rel="noopener nofollow">{{ project.repo_url }}</a></dd>{% endif %}
-      {% if project.demo_url %}<dt>Demo</dt><dd><a href="{{ project.demo_url }}" rel="noopener nofollow">{{ project.demo_url }}</a></dd>{% endif %}
-    </dl>
-    {% if own %}<a class="btn ghost" href="/events/{{ project.event.slug }}/team">Edit on your team page</a>{% endif %}
-    {% if project.status == "submitted" %}
-      <a class="btn ghost" href="/events/{{ project.event.slug }}/certificates/{{ project.team.external_id or project.team.id }}" target="_blank">🎓 Download certificate</a>
-    {% endif %}
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <span class="mono small muted">STATUS</span>
+        <div>{{ stamp(project.status) }}</div>
+      </div>
+      {% if own and project.status != "submitted" %}
+        <div class="pill pill-amber" style="margin-bottom:14px; width:100%; justify-content:center;">Draft: Visible Only to Your Team</div>
+      {% endif %}
+      
+      <dl class="dl">
+        <dt>Team</dt><dd><strong>{{ project.team.name }}</strong></dd>
+        <dt>Roster</dt><dd><span class="user-badge" style="font-size:.7rem; padding:2px 8px;">{{ project.team.members | length }} Member{{ "s" if project.team.members | length != 1 else "" }}</span></dd>
+        {% if project.submitted_at %}<dt>Filed</dt><dd class="mono small">{{ project.submitted_at | dt }}</dd>{% endif %}
+      </dl>
+
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px; border-top:1px solid var(--rule); padding-top:16px;">
+        {% if project.demo_url %}
+          <a class="btn primary small" href="{{ project.demo_url }}" target="_blank" rel="noopener nofollow">🚀 Launch Live Demo</a>
+        {% endif %}
+        {% if project.repo_url %}
+          <a class="btn ghost small" href="{{ project.repo_url }}" target="_blank" rel="noopener nofollow">💻 Source Code Repository</a>
+        {% endif %}
+        {% if own %}
+          <a class="btn ghost small" href="/events/{{ project.event.slug }}/team">Edit Team &amp; Project</a>
+        {% endif %}
+        {% if project.status == "submitted" %}
+          <a class="btn small" style="background:var(--amber); border-color:var(--amber); color:#FFFFFF;" href="/events/{{ project.event.slug }}/certificates/{{ project.team.external_id or project.team.id }}" target="_blank">🎓 Official Certificate</a>
+        {% endif %}
+      </div>
+    </div>
   </aside>
 </div>
 {% endblock %}

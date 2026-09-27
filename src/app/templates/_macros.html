@@ -9,10 +9,21 @@
 
 {% macro project_card(p, show_event=False) -%}
 <article class="article">
-  <div class="kicker">{{ p.track.name if p.track else "No track" }}{% if show_event %} · {{ p.event.name }}{% endif %}</div>
-  <h3><a href="/projects/{{ p.external_id or p.id }}">{{ p.title }}</a></h3>
-  <p>{{ p.summary }}</p>
-  <div class="byline">by {{ p.team.name }}{% if p.submitted_at %} · filed {{ p.submitted_at | dt }}{% endif %}</div>
+  <div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
+      <span class="pill pill-blue">{{ p.track.name if p.track else "General Track" }}</span>
+      {% if show_event %}<span class="mono small muted">{{ p.event.name }}</span>{% endif %}
+    </div>
+    <h3><a href="/projects/{{ p.external_id or p.id }}">{{ p.title }}</a></h3>
+    <p>{{ p.summary }}</p>
+  </div>
+  
+  <div class="byline" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+    <span class="user-badge" style="font-size:.72rem; padding:2px 8px;">{{ p.team.name }}</span>
+    <span class="small muted">
+      {% if p.submitted_at %}Filed {{ p.submitted_at | dt }}{% else %}Draft{% endif %}
+    </span>
+  </div>
 </article>
 {%- endmacro %}
 

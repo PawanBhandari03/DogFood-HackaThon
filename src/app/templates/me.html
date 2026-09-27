@@ -2,116 +2,149 @@
 {% from "_macros.html" import stamp, phase_stamp, bar with context %}
 {% block title %}Your desk{% endblock %}
 {% block content %}
-<div class="kicker">Your desk</div>
-<h1>Hello, {{ viewer.user.name }}</h1>
-<p class="deck">Everything you are part of, in one place.</p>
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:28px;">
+  <div>
+    <div class="kicker">Participant &amp; Reviewer Portal</div>
+    <h1 style="margin-bottom:6px;">Hello, {{ viewer.user.name }}</h1>
+    <p class="deck" style="margin-bottom:0;">Everything you build, judge, and organize across all hackathons.</p>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+    <span class="user-badge">{{ viewer.user.email }}</span>
+    {% if viewer.is_admin %}<span class="pill pill-accent">Administrator</span>{% endif %}
+    {% if viewer.judge_event_ids %}<span class="pill pill-purple">Official Judge</span>{% endif %}
+  </div>
+</div>
 
 {% if organizing %}
-<div class="section-head"><h2>Events you organize</h2>
-  {% if viewer.is_admin or viewer.user.can_create_events %}<a class="btn small" href="/events/new">New event</a>{% endif %}</div>
+<div class="section-head">
+  <h2>Events you organize</h2>
+  {% if viewer.is_admin or viewer.user.can_create_events %}<a class="btn small" href="/events/new">+ New event</a>{% endif %}
+</div>
 <div class="table-wrap"><table>
-  <thead><tr><th>Event</th><th>Status</th><th>Closes</th><th></th></tr></thead>
+  <thead><tr><th>Event</th><th>Status</th><th>Closes</th><th>Action</th></tr></thead>
   <tbody>{% for e in organizing %}
-    <tr><td><a href="/events/{{ e.slug }}">{{ e.name }}</a></td><td>{{ phase_stamp(e) }}</td>
+    <tr>
+      <td><a href="/events/{{ e.slug }}" style="font-weight:700">{{ e.name }}</a></td>
+      <td>{{ phase_stamp(e) }}</td>
       <td class="num">{{ e.submissions_close_at | dt }}</td>
-      <td><a class="btn small" href="/events/{{ e.slug }}/manage">Organizer desk</a></td></tr>
+      <td><a class="btn small" href="/events/{{ e.slug }}/manage">Organizer desk →</a></td>
+    </tr>
   {% endfor %}</tbody>
 </table></div>
 {% endif %}
 
 {% if judging %}
-<div class="section-head"><h2>Events you judge</h2><a class="btn small" href="/judge">Judge desk</a></div>
+<div class="section-head">
+  <h2>Events you judge</h2>
+  <a class="btn small" href="/judge">Judge desk →</a>
+</div>
 <div class="table-wrap"><table>
-  <thead><tr><th>Event</th><th class="num">Done</th><th>Progress</th></tr></thead>
+  <thead><tr><th>Event</th><th class="num">Done</th><th>Progress</th><th>Action</th></tr></thead>
   <tbody>{% for e, done, total in judging %}
-    <tr><td>{{ e.name }}</td><td class="num">{{ done }} / {{ total }}</td><td style="width:40%">{{ bar(done, total) }}</td></tr>
+    <tr>
+      <td><span style="font-weight:700">{{ e.name }}</span></td>
+      <td class="num">{{ done }} / {{ total }}</td>
+      <td style="width:40%">{{ bar(done, total) }}</td>
+      <td><a class="btn small ghost" href="/judge">Score projects →</a></td>
+    </tr>
   {% endfor %}</tbody>
 </table></div>
 {% endif %}
 
-<div class="section-head" style="margin-top:2rem;">
-  <h2>Your Projects & Review Pipeline</h2>
-  <span class="muted" style="font: .85rem/1.2 var(--mono);">End-to-end status: submission · organizer screening · judging evaluations · final selection</span>
+<div class="section-head" style="margin-top:2.5rem;">
+  <div>
+    <h2>Your Projects &amp; Review Pipeline</h2>
+    <span class="muted" style="font: .8rem/1.3 var(--mono);">Comprehensive 4-Stage Lifecycle: Submission · Organizer Screening · Judging · Final Selection</span>
+  </div>
 </div>
 
 {% if memberships %}
-<div class="journey-cards" style="display:flex; flex-direction:column; gap:2rem; margin-top:1.25rem;">
+<div class="journey-cards" style="display:flex; flex-direction:column; gap:24px; margin-top:16px;">
   {% for m in memberships %}
     {% set j = journeys.get(m.team_id) %}
     {% set p = j.project %}
-    <div class="panel" style="border: 2px solid var(--ink); padding: 1.5rem; background: var(--paper); box-shadow: 4px 4px 0 var(--ink);">
+    <div class="pipeline-card">
       
       <!-- Card Header -->
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; border-bottom:1px solid var(--rule); padding-bottom:1rem; margin-bottom:1.25rem;">
+      <div class="pipeline-header">
         <div>
-          <div class="kicker"><a href="/events/{{ m.team.event.slug }}">{{ m.team.event.name }}</a> · Team {{ m.team.name }}</div>
-          <h2 style="margin:.25rem 0 .4rem 0;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+            <a href="/events/{{ m.team.event.slug }}" class="pill pill-blue">{{ m.team.event.name }}</a>
+            <span class="pill pill-purple">Team {{ m.team.name }}</span>
+            <span class="user-badge" style="font-size:.7rem; padding:2px 8px;">Role: {{ "Team Lead" if m.is_lead else "Member" }}</span>
+          </div>
+          
+          <h2 style="margin:6px 0 8px 0;">
             {% if p %}
-              <a href="/projects/{{ p.external_id or p.id }}">{{ p.title }}</a>
+              <a href="/projects/{{ p.external_id or p.id }}" style="text-decoration:none; color:inherit;">{{ p.title }}</a>
             {% else %}
-              <span class="muted">No project drafted yet</span>
+              <span class="muted italic">Project submission not yet initiated</span>
             {% endif %}
           </h2>
-          <div class="byline" style="margin:0;">
-            Role: <strong>{{ "Lead" if m.is_lead else "Member" }}</strong>
-            {% if p and p.track %} · Track: <strong>{{ p.track.name }}</strong>{% endif %}
-            · Deadline: <strong>{{ m.team.event.submissions_close_at | dt }}</strong>
+          
+          <div class="byline" style="border:none; padding:0; margin:0;">
+            {% if p and p.track %}<span class="pill pill-accent" style="margin-right:8px;">{{ p.track.name }}</span>{% endif %}
+            Submission Deadline: <strong>{{ m.team.event.submissions_close_at | dt }}</strong>
           </div>
         </div>
 
         <div style="text-align:right;">
-          <div class="stamp {{ j.current_badge_class }}" style="font-size:.85rem; padding:.35rem .75rem; border:2px solid currentColor;">
+          <div class="stamp {{ j.current_badge_class }}" style="font-size:.85rem; padding:6px 12px;">
             {{ j.current_badge }}
           </div>
-          <div style="font: .75rem/1.2 var(--mono); color: var(--ink-2); margin-top:.4rem;">
-            Current Stage: <strong>{{ j.current_level_name }}</strong>
+          <div style="font: 700 .75rem/1.2 var(--mono); color: var(--ink-2); margin-top:8px;">
+            Active Level: <span style="color:var(--accent);">{{ j.current_level_name }}</span>
           </div>
         </div>
       </div>
 
-      <!-- The Full Path Stepper (Pipeline) -->
-      <div class="stepper-wrap" style="margin: 1.25rem 0;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-          {% for s in j.stages %}
-            <div style="background: var(--paper-2); border: 1px solid var(--rule); padding: 1rem; position: relative;">
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:.5rem;">
-                <span style="font: 700 .75rem/1 var(--mono); letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2);">
+      <!-- The 4-Stage Stepper Grid -->
+      <div class="stepper-grid">
+        {% for s in j.stages %}
+          <div class="step-node {{ s.status }}">
+            <div>
+              <div class="step-top">
+                <span class="step-num">0{{ loop.index }}</span>
+                <span style="font: 800 .75rem/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink);">
                   {{ s.title }}
                 </span>
+              </div>
+              <div style="margin-bottom:10px;">
                 {% if s.status == 'done' %}
-                  <span class="stamp done" style="font-size:.65rem; color:var(--green);">✓ {{ s.badge }}</span>
+                  <span class="pill pill-green" style="font-size:.65rem;">✓ {{ s.badge }}</span>
                 {% elif s.status == 'active' %}
-                  <span class="stamp active" style="font-size:.65rem; background:var(--marker); color:var(--marker-ink); padding:2px 4px;">● {{ s.badge }}</span>
+                  <span class="pill pill-amber" style="font-size:.65rem;">⚡ {{ s.badge }}</span>
                 {% elif s.status == 'flagged' %}
-                  <span class="stamp flagged" style="font-size:.65rem; color:var(--accent);">⚠️ {{ s.badge }}</span>
+                  <span class="pill pill-accent" style="font-size:.65rem;">⚠️ {{ s.badge }}</span>
                 {% else %}
-                  <span class="stamp pending" style="font-size:.65rem; opacity:.6;">○ {{ s.badge }}</span>
+                  <span class="pill" style="font-size:.65rem; color:var(--ink-muted); border-color:var(--rule-strong);">⏳ {{ s.badge }}</span>
                 {% endif %}
               </div>
-              <p style="font-size:.85rem; line-height:1.35; margin:0 0 .5rem 0; color:var(--ink);">
+              <p style="font-size:.86rem; line-height:1.4; margin:0 0 10px 0; color:var(--ink);">
                 {{ s.detail }}
               </p>
-              {% if s.hint %}
-                <div style="font: .7rem/1.2 var(--mono); color:var(--ink-2);">
-                  {{ s.hint }}
-                </div>
-              {% endif %}
             </div>
-          {% endfor %}
-        </div>
+
+            {% if s.hint %}
+              <div style="font: 600 .72rem/1.3 var(--mono); color:var(--ink-muted); border-top:1px dashed var(--rule); padding-top:8px; margin-top:8px;">
+                {{ s.hint }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
       </div>
 
       <!-- Footer Action Links -->
-      <div style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; border-top:1px solid var(--rule); padding-top:1rem; margin-top:.75rem;">
-        <a class="btn small" href="/events/{{ m.team.event.slug }}/team">Manage Team & Project</a>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; border-top:1.5px solid var(--rule); padding-top:16px; margin-top:12px;">
+        <a class="btn primary small" href="/events/{{ m.team.event.slug }}/team">Edit Team &amp; Submission</a>
         {% if p %}
-          <a class="btn ghost small" href="/projects/{{ p.external_id or p.id }}">View in Gallery</a>
+          <a class="btn ghost small" href="/projects/{{ p.external_id or p.id }}">View in Gallery →</a>
           {% if j.certificate_url %}
-            <a class="btn ghost small" href="{{ j.certificate_url }}" target="_blank">Print Certificate</a>
+            <a class="btn small" style="background:var(--amber); border-color:var(--amber); color:#FFFFFF;" href="{{ j.certificate_url }}" target="_blank">🎓 Print Official Certificate</a>
           {% endif %}
         {% endif %}
         {% if m.team.event.voting_mode == "authenticated" %}
-          <a class="btn ghost small" href="/events/{{ m.team.event.slug }}/vote">Community Ballot</a>
+          <a class="btn ghost small" href="/events/{{ m.team.event.slug }}/vote">Cast Community Votes</a>
         {% endif %}
       </div>
 
@@ -119,6 +152,10 @@
   {% endfor %}
 </div>
 {% else %}
-<p>You are not on a team yet. <a href="/">Pick an event</a> and start one, or open an invite link from a teammate.</p>
+<div class="panel" style="text-align:center; padding:48px 24px;">
+  <h3>No Active Team Memberships</h3>
+  <p class="muted">You are not participating in any hackathons yet.</p>
+  <a class="btn primary" href="/">Browse Open Hackathons →</a>
+</div>
 {% endif %}
 {% endblock %}

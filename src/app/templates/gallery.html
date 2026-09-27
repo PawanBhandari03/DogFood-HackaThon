@@ -2,23 +2,36 @@
 {% from "_macros.html" import project_card with context %}
 {% block title %}Gallery{% endblock %}
 {% block content %}
-<div class="kicker">The gallery</div>
-<h1>Every submitted project</h1>
-<p class="deck">{{ total }} entr{{ "y" if total == 1 else "ies" }}{% if q or event or track %} match your search{% endif %}.</p>
+<div class="kicker">The Official Showcase</div>
+<h1>Every Submitted Innovation</h1>
+<p class="deck">{{ total }} verified entr{{ "y" if total == 1 else "ies" }}{% if q or event or track %} matching your current search criteria{% endif %}.</p>
 
-<form method="get" action="/projects" class="row" role="search" style="align-items:end;margin-bottom:24px">
-  <div><label for="q">Search</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Title, summary or team"></div>
-  <div><label for="event">Event</label>
-    <select id="event" name="event"><option value="">All events</option>
-      {% for e in events %}<option value="{{ e.slug }}" {% if e.slug == event %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
-    </select></div>
-  <div><label for="track">Track</label>
-    <select id="track" name="track"><option value="">All tracks</option>
-      {% for t in tracks %}<option {% if t == track %}selected{% endif %}>{{ t }}</option>{% endfor %}
-    </select></div>
-  <div class="actions" style="margin:0"><button class="btn" type="submit">Filter</button>
-    {% if q or event or track %}<a class="btn ghost" href="/projects">Clear</a>{% endif %}</div>
-</form>
+<div class="panel" style="padding:18px 22px; margin-bottom:28px;">
+  <form method="get" action="/projects" class="row" role="search" style="align-items:end;">
+    <div>
+      <label for="q">Search Keywords</label>
+      <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search by title, summary, or team name...">
+    </div>
+    <div>
+      <label for="event">Filter by Event</label>
+      <select id="event" name="event">
+        <option value="">All Events</option>
+        {% for e in events %}<option value="{{ e.slug }}" {% if e.slug == event %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="track">Filter by Track</label>
+      <select id="track" name="track">
+        <option value="">All Tracks</option>
+        {% for t in tracks %}<option {% if t == track %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="actions" style="margin:0;">
+      <button class="btn primary" type="submit">Apply Filters</button>
+      {% if q or event or track %}<a class="btn ghost" href="/projects">Reset</a>{% endif %}
+    </div>
+  </form>
+</div>
 
 {% if projects %}
 <div class="columns">
@@ -26,12 +39,16 @@
 </div>
 {% if pages > 1 %}
 <nav class="pager" aria-label="Pages">
-  {% if page > 1 %}<a href="?q={{ q|urlencode }}&event={{ event }}&track={{ track|urlencode }}&page={{ page - 1 }}">← Previous</a>{% endif %}
-  <span>Page {{ page }} of {{ pages }}</span>
-  {% if page < pages %}<a href="?q={{ q|urlencode }}&event={{ event }}&track={{ track|urlencode }}&page={{ page + 1 }}">Next →</a>{% endif %}
+  {% if page > 1 %}<a class="btn small ghost" href="?q={{ q|urlencode }}&event={{ event }}&track={{ track|urlencode }}&page={{ page - 1 }}">← Previous</a>{% endif %}
+  <span class="user-badge" style="padding:6px 14px;">Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a class="btn small ghost" href="?q={{ q|urlencode }}&event={{ event }}&track={{ track|urlencode }}&page={{ page + 1 }}">Next →</a>{% endif %}
 </nav>
 {% endif %}
 {% else %}
-<p class="pullquote">Nothing matches. Try fewer words, or clear the filters.</p>
+<div class="panel alert" style="text-align:center; padding:40px 20px;">
+  <h3>No Matching Projects Found</h3>
+  <p class="muted">Try adjusting your search terms or clearing the event and track filters.</p>
+  <a class="btn small primary" href="/projects">Clear All Filters</a>
+</div>
 {% endif %}
 {% endblock %}

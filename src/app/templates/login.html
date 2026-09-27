@@ -2,27 +2,43 @@
 {% block title %}Log in{% endblock %}
 {% block content %}
 <div class="form-narrow">
-  <div class="kicker">Members' entrance</div>
-  <h1>Log in</h1>
+  <div class="kicker">Members' Portal</div>
+  <h1 style="margin-bottom:8px;">Sign In to Broadsheet</h1>
+  <p class="deck" style="margin-bottom:20px;">Access your hackathon submissions, judging reviews, and organizer desk.</p>
+
   {% if error %}<div class="flash" role="alert">{{ error }}</div>{% endif %}
-  <form method="post" action="/login">
-    <input type="hidden" name="next" value="{{ next }}">
-    <label for="email">Email</label>
-    <input id="email" name="email" type="email" value="{{ email }}" autocomplete="username" required autofocus>
-    <label for="password">Password</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" required>
-    <div class="actions"><button class="btn" type="submit">Log in</button>
-      <a href="/register?next={{ next|urlencode }}">No account? Register</a></div>
-  </form>
+  
+  <div class="panel" style="padding:28px 24px;">
+    <form method="post" action="/login">
+      <input type="hidden" name="next" value="{{ next }}">
+      
+      <label for="email">Email Address</label>
+      <input id="email" name="email" type="email" value="{{ email }}" autocomplete="username" required autofocus placeholder="name@example.org">
+      
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••••••">
+      
+      <div class="actions" style="margin-top:24px;">
+        <button class="btn primary" type="submit" style="width:100%;">Sign In →</button>
+      </div>
+    </form>
+    
+    <div style="text-align:center; margin-top:18px; border-top:1px solid var(--rule); padding-top:14px;">
+      <span class="small muted">New participant? </span>
+      <a href="/register?next={{ next|urlencode }}" style="font-weight:700;">Create an account</a>
+    </div>
+  </div>
+
   {% if demo_mode %}
-  <div class="panel" style="margin-top:32px">
-    <h3>Demo accounts</h3>
-    <p class="small">Every seeded account uses the password <span class="mono">dogfood-demo</span>.</p>
+  <div class="panel" style="margin-top:24px; border-top:4px solid var(--accent); background:var(--paper-tint);">
+    <div class="kicker">Demonstration Environment</div>
+    <h3 style="margin:4px 0 10px 0;">Available Demo Logins</h3>
+    <p class="small" style="margin-bottom:14px;">Master demo password for all accounts: <code class="mono" style="background:var(--paper); padding:2px 6px; border:1px solid var(--ink); font-weight:700;">dogfood-demo</code></p>
     <dl class="dl small">
-      <dt>Admin</dt><dd class="mono">admin@dogfood.local</dd>
-      <dt>Organizer</dt><dd class="mono">organizer@dogfood.local</dd>
-      <dt>Judge</dt><dd class="mono">diego.herrera@example.org</dd>
-      <dt>Participant</dt><dd class="mono">priya1@example.org</dd>
+      <dt><span class="pill pill-accent" style="font-size:.65rem;">Admin</span></dt><dd class="mono">admin@dogfood.local</dd>
+      <dt><span class="pill pill-blue" style="font-size:.65rem;">Organizer</span></dt><dd class="mono">organizer@dogfood.local</dd>
+      <dt><span class="pill pill-purple" style="font-size:.65rem;">Judge</span></dt><dd class="mono">diego.herrera@example.org</dd>
+      <dt><span class="pill pill-green" style="font-size:.65rem;">Participant</span></dt><dd class="mono">priya1@example.org</dd>
     </dl>
   </div>
   {% endif %}

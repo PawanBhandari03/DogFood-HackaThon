@@ -19,7 +19,7 @@
         {% if viewer and viewer.is_authenticated %}
           {% if viewer.judge_event_ids %}<a href="/judge">Judge desk</a>{% endif %}
           {% if viewer.is_admin %}<a href="/admin">Admin</a>{% endif %}
-          <a href="/me">{{ viewer.user.name }}</a>
+          <a href="/me" class="user-badge">{{ viewer.user.name }}</a>
           <form method="post" action="/logout"><button class="linkbutton" type="submit">Log out</button></form>
         {% else %}
           <a href="/login">Log in</a>
@@ -29,6 +29,11 @@
     </div>
   </div>
   <header class="nameplate wrap">
+    <div class="nameplate-top">
+      <span class="seal-tag">EST. 2026</span>
+      <span class="seal-tag">VOL. I · NO. 1</span>
+      <span class="seal-tag">INDEPENDENT PRESS</span>
+    </div>
     <a href="/"><span class="title">Broadsheet</span></a>
     <div class="motto">Hackathon submissions &amp; judging, printed fresh and run by you.</div>
   </header>

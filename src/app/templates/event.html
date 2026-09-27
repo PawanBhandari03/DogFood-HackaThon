@@ -4,82 +4,146 @@
 {% block content %}
 <div class="desk-head">
   <div>
-    <div class="kicker">Event</div>
-    <h1>{{ event.name }}</h1>
-    {% if event.tagline %}<p class="deck">{{ event.tagline }}</p>{% endif %}
+    <div class="kicker">Official Hackathon Dispatch</div>
+    <h1 style="margin-bottom:8px;">{{ event.name }}</h1>
+    {% if event.tagline %}<p class="deck" style="margin-bottom:0;">{{ event.tagline }}</p>{% endif %}
   </div>
   <div>{{ phase_stamp(event) }}</div>
 </div>
 
 <div class="stats">
-  <div><span class="big">{{ submitted }}</span><span class="label">projects submitted</span></div>
-  <div><span class="big">{{ teams }}</span><span class="label">teams</span></div>
-  <div><span class="big">{{ event.tracks | length }}</span><span class="label">tracks</span></div>
-  <div><span class="big">{{ event.max_team_size }}</span><span class="label">max team size</span></div>
+  <div>
+    <span class="big" style="color:var(--accent);">{{ submitted }}</span>
+    <span class="label">📝 Projects Submitted</span>
+  </div>
+  <div>
+    <span class="big" style="color:var(--green);">{{ teams }}</span>
+    <span class="label">👥 Active Teams</span>
+  </div>
+  <div>
+    <span class="big" style="color:var(--blue);">{{ event.tracks | length }}</span>
+    <span class="label">🧭 Competition Tracks</span>
+  </div>
+  <div>
+    <span class="big" style="color:var(--amber);">{{ event.max_team_size }}</span>
+    <span class="label">📏 Max Team Size</span>
+  </div>
 </div>
 
 <div class="split">
   <div>
-    {% if event.description %}{% for para in event.description.split("\n\n") %}<p>{{ para }}</p>{% endfor %}{% endif %}
+    {% if event.description %}
+      <div class="panel" style="background:var(--paper-tint); line-height:1.7;">
+        {% for para in event.description.split("\n\n") %}<p style="margin:0 0 14px 0;">{{ para }}</p>{% endfor %}
+      </div>
+    {% endif %}
 
-    <div class="section-head"><h2>Tracks</h2></div>
+    <div class="section-head"><h2>Competition Tracks</h2></div>
     {% if event.tracks %}
     <div class="columns">
       {% for t in event.tracks %}
-      <article class="article"><h3><a href="/projects?event={{ event.slug }}&track={{ t.name|urlencode }}">{{ t.name }}</a></h3>
-        {% if t.description %}<p>{{ t.description }}</p>{% endif %}</article>
+      <article class="article">
+        <div>
+          <span class="pill pill-blue" style="margin-bottom:8px;">Track</span>
+          <h3><a href="/projects?event={{ event.slug }}&track={{ t.name|urlencode }}">{{ t.name }}</a></h3>
+          {% if t.description %}<p>{{ t.description }}</p>{% endif %}
+        </div>
+        <div class="byline">
+          <a class="btn small ghost" href="/projects?event={{ event.slug }}&track={{ t.name|urlencode }}">View Track Projects →</a>
+        </div>
+      </article>
       {% endfor %}
     </div>
-    {% else %}<p class="muted">No tracks: every project competes in one pool.</p>{% endif %}
+    {% else %}
+    <p class="muted">No specific tracks: every project competes in one unified open pool.</p>
+    {% endif %}
 
-    <div class="section-head"><h2>Prizes</h2></div>
+    <div class="section-head"><h2>Honors &amp; Awards</h2></div>
     {% if event.prizes %}
     <div class="table-wrap"><table>
-      <thead><tr><th>Prize</th><th>Reward</th><th>Track</th></tr></thead>
-      <tbody>{% for p in event.prizes %}<tr><td>{{ p.name }}</td><td>{{ p.reward }}</td><td>{{ p.track.name if p.track else "Any" }}</td></tr>{% endfor %}</tbody>
+      <thead><tr><th>Prize Title</th><th>Reward / Bounty</th><th>Eligible Track</th></tr></thead>
+      <tbody>
+        {% for p in event.prizes %}
+        <tr>
+          <td><strong style="color:var(--accent);">🏆 {{ p.name }}</strong></td>
+          <td><span class="pill pill-amber">{{ p.reward }}</span></td>
+          <td><span class="pill pill-blue">{{ p.track.name if p.track else "All Tracks Eligible" }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table></div>
-    {% else %}<p class="muted">No prizes listed yet.</p>{% endif %}
+    {% else %}
+    <p class="muted">Prize pool announcements will be published shortly.</p>
+    {% endif %}
   </div>
 
   <aside class="sidebar">
-    <dl class="dl">
-      <dt>Opens</dt><dd>{{ event.starts_at | dt }}</dd>
-      <dt>Closes</dt><dd>{{ event.submissions_close_at | dt }}</dd>
-      {% if event.judging_close_at %}<dt>Judging ends</dt><dd>{{ event.judging_close_at | dt }}</dd>{% endif %}
-    </dl>
     <div class="panel">
+      <h3 style="margin-bottom:12px;">Important Dates</h3>
+      <dl class="dl">
+        <dt>Opens</dt><dd>{{ event.starts_at | dt }}</dd>
+        <dt>Deadline</dt><dd><strong>{{ event.submissions_close_at | dt }}</strong></dd>
+        {% if event.judging_close_at %}<dt>Judging Closes</dt><dd>{{ event.judging_close_at | dt }}</dd>{% endif %}
+      </dl>
+    </div>
+
+    <div class="panel" style="border-top:4px solid var(--accent);">
       {% if event.phase(now) == "open" %}
         {% if member %}
-          <h3>You are in {{ member.team.name }}</h3>
-          <a class="btn" href="/events/{{ event.slug }}/team">Go to your team</a>
+          <div class="kicker">Active Registration</div>
+          <h3 style="margin:4px 0 10px 0;">You are in team: {{ member.team.name }}</h3>
+          <p class="small muted">Coordinate members, manage your project workspace, and file your submission.</p>
+          <a class="btn primary" href="/events/{{ event.slug }}/team" style="width:100%;">Go to Your Team Desk →</a>
         {% elif viewer and viewer.is_authenticated %}
-          <h3>Enter this event</h3>
+          <div class="kicker">Open Registration</div>
+          <h3 style="margin:4px 0 10px 0;">Enter this Hackathon</h3>
           <form method="post" action="/events/{{ event.slug }}/team">
-            <label for="name">Team name</label>
-            <input id="name" name="name" type="text" required maxlength="120">
-            <div class="actions"><button class="btn" type="submit">Start a team</button></div>
+            <label for="name">Your Team Name</label>
+            <input id="name" name="name" type="text" required maxlength="120" placeholder="e.g. Algorithmic Artisans">
+            <div class="actions"><button class="btn primary" type="submit" style="width:100%;">Start New Team →</button></div>
           </form>
-          <p class="hint">Joining a friend's team? Open the invite link they sent you.</p>
+          <p class="hint" style="margin-top:10px;">Joining a teammate? Click the unique invite link they shared with you.</p>
         {% else %}
-          <h3>Enter this event</h3>
-          <p>Log in or register to start a team.</p>
-          <a class="btn" href="/login?next=/events/{{ event.slug }}">Log in</a>
+          <div class="kicker">Registration Required</div>
+          <h3 style="margin:4px 0 10px 0;">Enter this Hackathon</h3>
+          <p class="small muted">Sign in or register an account to create or join a hackathon team.</p>
+          <div class="actions">
+            <a class="btn primary" href="/login?next=/events/{{ event.slug }}">Log In to Enter</a>
+            <a class="btn ghost" href="/register">Create Account</a>
+          </div>
         {% endif %}
       {% elif event.phase(now) == "upcoming" %}
-        <h3>Not open yet</h3><p>Teams and submissions open {{ event.starts_at | dt }}.</p>
+        <div class="kicker">Upcoming Dispatch</div>
+        <h3 style="margin:4px 0 10px 0;">Submissions Not Open Yet</h3>
+        <p class="small muted">Registration and team creations open on {{ event.starts_at | dt }}.</p>
       {% else %}
-        <h3>Submissions are closed</h3>
-        {% if event.results_published_at %}<a class="btn" href="/events/{{ event.slug }}/results">See the results</a>
-        {% else %}<p>Judging is under way. Results appear here when the organizers publish them.</p>{% endif %}
+        <div class="kicker">Stage Concluded</div>
+        <h3 style="margin:4px 0 10px 0;">Submissions are Closed</h3>
+        {% if event.results_published_at %}
+          <a class="btn primary" href="/events/{{ event.slug }}/results" style="width:100%;">🏆 View Official Results</a>
+        {% else %}
+          <p class="small muted">Judging is actively in progress. Official awards and results will be published here upon deliberation.</p>
+        {% endif %}
       {% endif %}
     </div>
+
     {% if event.voting_mode == "authenticated" and event.voting_open_at and event.voting_close_at and event.voting_open_at <= now < event.voting_close_at %}
-      <a class="btn" href="/events/{{ event.slug }}/vote">Vote on projects</a>
+      <div class="panel" style="background:var(--amber-light); border-color:var(--amber);">
+        <div class="kicker" style="color:var(--amber);">Community Participation</div>
+        <h3 style="margin:4px 0 10px 0;">Ballot is Open!</h3>
+        <p class="small" style="margin-bottom:12px;">Cast your peer votes for your favorite innovative projects.</p>
+        <a class="btn small" style="background:var(--amber); border-color:var(--amber); color:#FFFFFF; width:100%;" href="/events/{{ event.slug }}/vote">Vote on Projects →</a>
+      </div>
     {% elif event.voting_mode == "authenticated" and event.voting_close_at and now >= event.voting_close_at %}
-      <a class="btn ghost" href="/events/{{ event.slug }}/community">Community results</a>
+      <a class="btn ghost" href="/events/{{ event.slug }}/community" style="width:100%;">📊 Community Ballot Results</a>
     {% endif %}
-    <a class="btn ghost" href="/projects?event={{ event.slug }}">Browse the projects</a>
-    {% if viewer and viewer.is_organizer(event) %}<a class="btn" href="/events/{{ event.slug }}/manage">Organizer desk</a>{% endif %}
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <a class="btn ghost" href="/projects?event={{ event.slug }}">Browse All Event Projects →</a>
+      {% if viewer and viewer.is_organizer(event) %}
+        <a class="btn" href="/events/{{ event.slug }}/manage">Organizer Management Desk ⚙️</a>
+      {% endif %}
+    </div>
   </aside>
 </div>
 {% endblock %}
