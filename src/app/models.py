@@ -411,3 +411,35 @@ class Comment(Base):
     user: Mapped[User] = relationship(foreign_keys=[user_id])
     hidden_by: Mapped[Optional[User]] = relationship(foreign_keys=[hidden_by_id])
 
+
+class Webhook(Base):
+    __tablename__ = "webhooks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), index=True)
+    url: Mapped[str] = mapped_column(String(500))
+    secret: Mapped[str] = mapped_column(String(64))
+    subscribed_events: Mapped[list] = mapped_column(JSONType, default=list)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
+    created_at: Mapped[datetime] = mapped_column(TZ, default=utcnow)
+    created_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
+    event: Mapped[Event] = relationship()
+    created_by: Mapped[Optional[User]] = relationship()
+
+
+class WebhookDelivery(Base):
+    __tablename__ = "webhook_deliveries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    webhook_id: Mapped[int] = mapped_column(ForeignKey("webhooks.id", ondelete="CASCADE"), index=True)
+    event_type: Mapped[str] = mapped_column(String(60))
+    payload: Mapped[dict] = mapped_column(JSONType, default=dict)
+    status_code: Mapped[Optional[int]] = mapped_column(Integer)
+    error: Mapped[str] = mapped_column(Text, default="", server_default="")
+    attempted_at: Mapped[datetime] = mapped_column(TZ, default=utcnow)
+    succeeded: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+
+    webhook: Mapped[Webhook] = relationship()
+
+
