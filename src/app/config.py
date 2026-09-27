@@ -33,7 +33,7 @@ def _instance_secret() -> str:
 @dataclass(frozen=True)
 class Settings:
     database_url: str = field(default_factory=lambda: _env(
-        "DATABASE_URL", "sqlite:///./dogfood.db"))
+        "DATABASE_URL", "postgresql+psycopg://dogfood:dogfood@localhost:5432/dogfood"))
     # "demo": seed fixtures, known passwords, fixed checker tokens.
     # "production": none of that; tokens are always random.
     mode: str = field(default_factory=lambda: _env("DOGFOOD_MODE", "demo"))
