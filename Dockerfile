@@ -8,15 +8,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Wheels are installed from vendor/wheels when present, so a build can run
-# with the network off (see README, "Offline build").
+# Linux wheels for x86_64 and arm64 are vendored in vendor/wheels, so the
+# image builds with the network off. If they ever do not match, fall back
+# to PyPI.
 COPY requirements.txt ./
 COPY vendor/ ./vendor/
-RUN if ls vendor/wheels/*.whl >/dev/null 2>&1; then \
-        pip install --no-index --find-links vendor/wheels -r requirements.txt; \
-    else \
-        pip install -r requirements.txt; \
-    fi
+RUN pip install --no-index --find-links vendor/wheels -r requirements.txt     || pip install -r requirements.txt
 
 COPY alembic.ini pytest.ini ./
 COPY src/ ./src/
