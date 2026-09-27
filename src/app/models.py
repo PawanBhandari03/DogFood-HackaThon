@@ -111,6 +111,7 @@ class Event(Base):
     voting_mode: Mapped[str] = mapped_column(String(20), default="off", server_default="off")
     voting_open_at: Mapped[Optional[datetime]] = mapped_column(TZ)
     voting_close_at: Mapped[Optional[datetime]] = mapped_column(TZ)
+    max_votes: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
     created_at: Mapped[datetime] = mapped_column(TZ, default=utcnow)
     created_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
@@ -376,3 +377,37 @@ class AuditEntry(Base):
     ip: Mapped[Optional[str]] = mapped_column(String(64))
 
     actor: Mapped[Optional[User]] = relationship()
+
+
+class Vote(Base):
+    __tablename__ = "votes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), index=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(TZ, default=utcnow)
+    ip: Mapped[Optional[str]] = mapped_column(String(64))
+
+    event: Mapped[Event] = relationship()
+    project: Mapped[Project] = relationship()
+    user: Mapped[User] = relationship()
+
+    __table_args__ = (UniqueConstraint("user_id", "project_id"),)
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(TZ, default=utcnow)
+    hidden_at: Mapped[Optional[datetime]] = mapped_column(TZ)
+    hidden_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
+    project: Mapped[Project] = relationship()
+    user: Mapped[User] = relationship(foreign_keys=[user_id])
+    hidden_by: Mapped[Optional[User]] = relationship(foreign_keys=[hidden_by_id])
+
