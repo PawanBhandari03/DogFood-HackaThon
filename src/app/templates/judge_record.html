@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Judge record · {{ record.judge_name }}{% endblock %}
+{% block content %}
+<div class="kicker">Public judge participation record</div>
+<h1>{{ record.judge_name }}</h1>
+<p class="deck">A verifiable record of judging participation on this Broadsheet instance.</p>
+
+{% if record.events %}
+<table class="table" style="margin: 2rem 0; width: 100%; max-width: 640px;">
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th style="text-align:right">Reviews completed</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ep in record.events %}
+    <tr>
+      <td><a href="/events/{{ ep.event_slug }}">{{ ep.event_name }}</a></td>
+      <td style="text-align:right">{{ ep.reviews_done }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted" style="margin: 2rem 0;">No completed reviews on record yet.</p>
+{% endif %}
+
+<div class="panel" style="max-width: 640px; margin: 2rem 0;">
+  <h2 style="font-size: 1rem; margin-bottom: .75rem;">Signature</h2>
+  <p class="small" style="margin-bottom: .75rem;">
+    This record is signed with HMAC-SHA256.  Anyone can verify it has not been
+    tampered with using the link below — no database access required.
+  </p>
+  <code class="copy" style="word-break: break-all; font-size: .78rem;">{{ record.signature }}</code>
+  <div style="margin-top: 1rem;">
+    <a class="btn small ghost"
+       href="/judges/{{ record.judge_ref }}/record/verify?sig={{ sig_encoded }}"
+       target="_blank"
+       id="verify-link">Verify this record &rarr;</a>
+  </div>
+</div>
+
+<p class="small muted">
+  Record ID: <code>{{ record.judge_ref }}</code> &middot;
+  <a href="/api/docs">API docs</a>
+</p>
+{% endblock %}

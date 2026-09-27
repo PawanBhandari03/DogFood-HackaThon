@@ -1,7 +1,13 @@
 """The judge console. Every query here is filtered by the caller's user id;
-an assignment id that belongs to someone else is refused and audited."""
+an assignment id that belongs to someone else is refused and audited.
+
+Public routes (no auth):
+  GET /judges/{ref}/record          — signed participation record HTML page
+  GET /judges/{ref}/record/verify   — JSON signature verifier
+"""
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -19,11 +25,13 @@ from app.models import (
     ScoreValue,
     Team,
     TeamMember,
+    User,
     utcnow,
 )
 from app.security import Forbidden
 from app.services import audit
 from app.services.deadline import ensure_judging_open
+from app.services.judge_records import load_record, verify_signature
 from app.web import redirect, render
 
 router = APIRouter()
@@ -171,3 +179,49 @@ def accept_invite(token: str, request: Request, viewer: Viewer = Depends(require
                  entity_type="invite", entity_id=invite.id, request=request)
     db.commit()
     return redirect("/judge", f"You are now a judge for {event.name}.")
+
+
+# --- public judge participation records (T4-6) --------------------------------
+
+def _lookup_judge(db: Session, ref: str) -> User:
+    """Resolve a judge by external_id or numeric id.  Raises 404 if not found."""
+    user = db.scalar(
+        select(User).where(
+            (User.external_id == ref) | (User.id == (int(ref) if ref.isdigit() else -1))
+        )
+    )
+    if user is None:
+        raise HTTPException(404, "No such judge.")
+    return user
+
+
+@router.get("/judges/{ref}/record", include_in_schema=False)
+def judge_record_page(ref: str, request: Request, db: Session = Depends(get_db)):
+    """Public HTML page showing a judge's signed participation record.
+
+    No login required — records are designed to be shared and independently
+    verified.  Never includes score values, comments, or project titles.
+    """
+    from urllib.parse import quote
+    user = _lookup_judge(db, ref)
+    record = load_record(db, user)
+    return render(request, "judge_record.html", record=record, sig_encoded=quote(record.signature))
+
+
+@router.get("/judges/{ref}/record/verify", include_in_schema=False)
+def judge_record_verify(ref: str, sig: str, db: Session = Depends(get_db)):
+    """Verify a judge-record signature.
+
+    Recomputes the HMAC-SHA256 signature from current data and compares it
+    with *sig*.  Returns ``{"valid": true}`` when they match.  Anyone can
+    call this endpoint without logging in — that is what makes the records
+    independently verifiable.
+
+    Responds 200 in both cases (valid and invalid) so callers can always
+    parse the JSON.
+    """
+    user = _lookup_judge(db, ref)
+    record = load_record(db, user)
+    valid = verify_signature(record.judge_ref, record.events, sig)
+    return JSONResponse({"valid": valid, "judge": user.name, "judge_ref": ref})
+
