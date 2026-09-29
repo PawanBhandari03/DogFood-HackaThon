@@ -19,6 +19,7 @@ from app.db import SessionLocal
 from app.models import AuthSession, Event, Prize, Role, RubricCriterion, Track, User, utcnow
 from app.security import create_session, hash_password, hash_token
 from app.services import audit
+from app.seed_extras import seed_practice_extras
 from app.services.importer import import_event
 
 # Fixed only in demo mode, so the checker and .dogfood.toml can rely on them.
@@ -98,6 +99,8 @@ def seed_demo() -> None:
                          entity_type="event", entity_id=report.event.slug,
                          detail={"created": report.created, "duplicates": report.duplicates})
         _practice_event(db, organizer)
+        db.flush()
+        seed_practice_extras(db)
 
         for role, token in CHECKER_TOKENS.items():
             user = db.scalar(select(User).where(User.email == CHECKER_USERS[role]))
