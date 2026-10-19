@@ -75,7 +75,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root[data-theme="auto"] {
     --paper: #121210;
     --paper-2: #1B1A16;
     --paper-card: #201F1A;
